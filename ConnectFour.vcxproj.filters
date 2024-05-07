@@ -53,8 +53,5 @@
     <Media Include="300105-SYMBOL-WIN-REVEAL-01-Sounds-of-China.wav">
       <Filter>Resource Files</Filter>
     </Media>
-    <Media Include="520978-DROP_FRY_PAN_CUSHION_HIGH_2.wav">
-      <Filter>Resource Files</Filter>
-    </Media>
   </ItemGroup>
 </Project>

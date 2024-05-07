@@ -49,11 +49,12 @@ void ConnectFour::runGame(void)
 	//sound
 	sf::SoundBuffer drop;
 	sf::SoundBuffer win;
-	drop.loadFromFile("520978-DROP_FRY_PAN_CUSHION_HIGH_2.wav");
+	drop.loadFromFile(""); //TODO: find a good drop sound
 	win.loadFromFile("300105-SYMBOL-WIN-REVEAL-01-Sounds-of-China.wav");
 	auto dropSound = sf::Sound(drop);
 	auto winSound = sf::Sound(win);
 	dropSound.setVolume(5);
+	dropSound.setPlayingOffset(sf::milliseconds(250));
 
 	//game loop
 	while (window.isOpen()) {

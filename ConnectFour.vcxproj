@@ -161,7 +161,6 @@
   </ItemGroup>
   <ItemGroup>
     <Media Include="300105-SYMBOL-WIN-REVEAL-01-Sounds-of-China.wav" />
-    <Media Include="520978-DROP_FRY_PAN_CUSHION_HIGH_2.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
