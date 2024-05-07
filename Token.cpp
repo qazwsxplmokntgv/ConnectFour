@@ -6,7 +6,7 @@ Token::Token(int playerID, sf::Color tokenColor)
 	mTokenGraphic = sf::CircleShape(tokenProp::radius);
 	mTokenGraphic.setFillColor(tokenColor);
 	mTokenGraphic.setOutlineThickness(tokenProp::outlineThickness);
-	mTokenGraphic.setOutlineColor(sf::Color(50, 50, 50));
+	mTokenGraphic.setOutlineColor(sf::Color(0, 0, 0, 100));
 }
 
 const sf::CircleShape& Token::getTokenGraphic(void) const

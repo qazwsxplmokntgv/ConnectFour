@@ -1,23 +1,27 @@
 #include "ConnectFour.hpp"
 
-ConnectFour::ConnectFour(int boardHeight, int boardWidth, int winRequirement, std::vector<Player> players)
+ConnectFour::ConnectFour(const Settings& settings)
 {
-	this->mBoardHeight = boardHeight;
-	this->mBoardWidth = boardWidth;
-	this->mWinRequirement = winRequirement;
-	this->mPlayers = players;
-
-	mBoard.reserve(mBoardWidth);
-	for (int i = 0; i < mBoardWidth; ++i) 
+	this->mBoardHeight = settings.mBoardHeight;
+	this->mBoardWidth = settings.mBoardWidth;
+	this->mWinRequirement = settings.mWinRequirement;
+	this->mPlayers = settings.mPlayerInfo;
+	this->mBoard.reserve(mBoardWidth);
+	for (int i = 0; i < mBoardWidth; ++i) {
 		mBoard.push_back(std::vector<Token>());
+		mBoard.back().reserve(mBoardHeight);
+	}
 }
 
 void ConnectFour::runGame(void)
 {
 	sf::RenderWindow window(
 		sf::VideoMode((unsigned int)tokenProp::radius * 2 * (mBoardWidth + (unsigned int)mPlayers.size()), (unsigned int)tokenProp::radius * 2 * (mBoardHeight + 1)),
-		"Connnect Four"
+		"Connect Four"
 	);
+	
+	//minimizes white window flash while below assets are being loaded
+	window.clear(sf::Color::Black);
 
 	int selectedCol = 0;
 	int currPlayer = 0;
@@ -53,8 +57,6 @@ void ConnectFour::runGame(void)
 	win.loadFromFile("300105-SYMBOL-WIN-REVEAL-01-Sounds-of-China.wav");
 	auto dropSound = sf::Sound(drop);
 	auto winSound = sf::Sound(win);
-	dropSound.setVolume(5);
-	dropSound.setPlayingOffset(sf::milliseconds(250));
 
 	//game loop
 	while (window.isOpen()) {
@@ -106,7 +108,6 @@ void ConnectFour::runGame(void)
 			}
 		}
 
-
 		//rendering
 		window.clear(sf::Color::Black);
 
@@ -137,17 +138,14 @@ void ConnectFour::runGame(void)
 			winText.setOutlineThickness(4.f);
 			winText.setOutlineColor(sf::Color::Black);
 			window.draw(winText);
-			window.display();
-			//pause until next keypress
-			while (event.type != sf::Event::KeyPressed) window.waitEvent(event);
+
 
 			//reset board
 			roundWinner = -1;
-			for (auto& col : mBoard) 
-				col.clear();
+			for (auto& col : mBoard) col.clear();
 		}
 
-		//display each player's win count
+		//draw each player's win count
 		for (auto& player : mPlayers) {
 			auto score = sf::Text(std::to_string(player.getWinCount()), font);
 			score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);

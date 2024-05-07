@@ -5,13 +5,14 @@
 #include <vector>
 #include "Player.hpp"
 #include "Token.hpp"
+#include "Settings.hpp"
 #include <SFML/Audio.hpp>
 #include <SFML/Window.hpp>
 
 class ConnectFour {
 public:
-	ConnectFour(int boardHeight = 6, int boardWidth = 7, int winRequirement = 4, 
-		std::vector<Player> players = { Player(Token(0, sf::Color::Red)), Player(Token(1, sf::Color::Yellow)) });
+	ConnectFour(const Settings& settings);
+
 	void runGame(void);
 private:
 	bool makeMove(int player, int column);

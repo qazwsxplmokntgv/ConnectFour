@@ -145,12 +145,16 @@
   <ItemGroup>
     <ClCompile Include="ConnectFour.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Menu.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Settings.cpp" />
     <ClCompile Include="Token.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectFour.hpp" />
+    <ClInclude Include="Menu.hpp" />
     <ClInclude Include="Player.hpp" />
+    <ClInclude Include="Settings.hpp" />
     <ClInclude Include="Token.hpp" />
   </ItemGroup>
   <ItemGroup>
