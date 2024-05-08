@@ -37,7 +37,6 @@ private:
 	Settings& mSettings;
 
 	int mMoveCount;
-	int mMaxMoves;
 
 	std::vector<std::vector<Token>> mBoard;
 	

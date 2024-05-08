@@ -4,7 +4,6 @@ ConnectFour::ConnectFour(Settings& settings) :
 	mSettings(settings), 
 	mMoveCount(0)
 {
-	this->mMaxMoves = mSettings.mBoardHeight * mSettings.mBoardWidth;
 	this->mBoard.reserve(mSettings.mBoardWidth);
 	for (int i = 0; i < mSettings.mBoardWidth; ++i) {
 		mBoard.push_back(std::vector<Token>());
@@ -174,7 +173,7 @@ void ConnectFour::runGame(void)
 							if (checkForWin(selectedCol, (int)mBoard[selectedCol].size() - 1))
 								roundWinner = currPlayer;
 							//checks for draws, resets board if is filled
-							else if (++mMoveCount >= mMaxMoves)
+							else if (++mMoveCount >= mSettings.mBoardHeight * mSettings.mBoardWidth)
 								resetBoard();
 
 							//switches to the next player's turn
