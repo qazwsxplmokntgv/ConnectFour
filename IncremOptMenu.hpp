@@ -29,7 +29,7 @@ private:
 	void inputRight();
 
 	//highest and lowest valid value for each option, and a ptr to its current value
-	//MUST INCLUDE PROPERTIES FOR EACH OPT //may be changed eventually to support opts defaulting to base behavior
+	//if the number of opts is greater than the number of provided properties, trailing opts will have this menu's functionality disabled
 	std::vector<IncremOptProperties> mOptProperties;
 
 	//whether the menu should run as a normal menu or not

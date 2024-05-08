@@ -3,11 +3,7 @@
 #define TOKEN_H
 
 #include <SFML/Graphics.hpp>
-
-namespace tokenProp {
-	const float radius = 50.f;
-	const float outlineThickness = -10.f;
-}
+#include "UnitSizes.hpp"
 
 class Token {
 public:

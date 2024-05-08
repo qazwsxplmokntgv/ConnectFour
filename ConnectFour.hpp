@@ -2,22 +2,29 @@
 #ifndef CONNECT_FOUR_H
 #define CONNECT_FOUR_H
 
-#include "Fonts.hpp"
+#include "Fonts.h"
 #include "Player.hpp"
 #include "Settings.hpp"
-#include "Sounds.hpp"
+#include "Sounds.h"
+#include "UnitSizes.hpp"
 #include "Token.hpp"
 #include "Settings.hpp"
 #include <SFML/Audio.hpp>
 #include <SFML/Window.hpp>
 #include <vector>
+#include <thread>
+
 
 class ConnectFour {
 public:
 	ConnectFour(Settings& settings);
 
-	void runGame(void);
+	std::thread startGameInstance();
+
 private:
+	void runGame(void);
+
+
 	bool makeMove(int player, int column);
 
 	//only checks for lines involving the most recent move to avoid redundant checks in unchanged parts of the board
@@ -25,12 +32,14 @@ private:
 
 	void resetBoard(void);
 
-	int mBoardHeight;
-	int mBoardWidth;
-	int mWinRequirement;
+	void resetScores(void);
+
+	Settings& mSettings;
+
+	int mMoveCount;
+	int mMaxMoves;
 
 	std::vector<std::vector<Token>> mBoard;
 	
-	std::vector<Player>* mPlayers;
 };
 #endif // !CONNECT_FOUR_H

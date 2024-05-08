@@ -56,11 +56,14 @@
     <ClInclude Include="IncremOptMenu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Fonts.hpp">
+    <ClInclude Include="Fonts.h">
       <Filter>Resource Files</Filter>
     </ClInclude>
-    <ClInclude Include="Sounds.hpp">
+    <ClInclude Include="Sounds.h">
       <Filter>Resource Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UnitSizes.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

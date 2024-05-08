@@ -3,9 +3,9 @@
 Token::Token(int playerID, sf::Color tokenColor)
 {
 	mPlayerID = playerID;
-	mTokenGraphic = sf::CircleShape(tokenProp::radius);
+	mTokenGraphic = sf::CircleShape(UnitSizes::tokenRadius);
 	mTokenGraphic.setFillColor(tokenColor);
-	mTokenGraphic.setOutlineThickness(tokenProp::outlineThickness);
+	mTokenGraphic.setOutlineThickness(UnitSizes::outlineThickness);
 	mTokenGraphic.setOutlineColor(sf::Color(0, 0, 0, 100));
 }
 

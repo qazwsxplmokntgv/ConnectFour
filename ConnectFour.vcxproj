@@ -155,13 +155,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectFour.hpp" />
-    <ClInclude Include="Fonts.hpp" />
+    <ClInclude Include="Fonts.h" />
     <ClInclude Include="IncremOptMenu.hpp" />
     <ClInclude Include="Menu.hpp" />
     <ClInclude Include="Player.hpp" />
     <ClInclude Include="Settings.hpp" />
-    <ClInclude Include="Sounds.hpp" />
+    <ClInclude Include="Sounds.h" />
     <ClInclude Include="Token.hpp" />
+    <ClInclude Include="UnitSizes.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

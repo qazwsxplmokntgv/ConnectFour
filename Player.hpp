@@ -13,6 +13,7 @@ public:
 	const Token& getToken(void) const;
 	int getWinCount(void) const;
 	void incWinCount(void);
+	void resetWinCount(void);
 
 private:
 	Token mToken;

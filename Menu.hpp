@@ -3,6 +3,8 @@
 #define MENU_H
 
 #include "Settings.hpp"
+#include "Sounds.h"
+#include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <string>
@@ -11,15 +13,7 @@
 
 class Menu {
 public:
-	Menu(sf::RenderWindow& window, sf::Font& font, std::string title, std::vector<std::string> opts, bool isSubMenu = false, bool* shouldIncludeAdditionalElements = nullptr) :
-		mWindow(window),
-		mFont(font),
-		mTitle(title),
-		mMenuOptions(opts),
-		mCurrSelection(0),
-		mIsSubMenu(isSubMenu),
-		mPersistInMenu(true),
-		mShouldIncludeAdditionalElements(shouldIncludeAdditionalElements) {}
+	Menu(sf::RenderWindow& window, sf::Font& font, std::string title, std::vector<std::string> opts, bool isSubMenu = false, bool* shouldIncludeAdditionalElements = nullptr);
 	
 	int runMenu();
 
@@ -31,10 +25,12 @@ protected:
 	virtual void inputLeft(void);
 	virtual void inputRight(void);
 
-	std::string mTitle;
+	sf::Text mTitle;
 	std::vector<std::string> mMenuOptions;
 
 	sf::Font& mFont;
+
+	sf::Sound mKeypressSound;
 
 	int mCurrSelection;
 

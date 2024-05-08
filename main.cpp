@@ -1,17 +1,31 @@
 #include "ConnectFour.hpp"
 #include "Settings.hpp"
-#include "Fonts.hpp"
+#include "Fonts.h"
 #include "Menu.hpp"
 #include "IncremOptMenu.hpp"
 
 
+/*CONNECT FOUR
+* 
+* Project primarily done to get a better understanding of SFML
+* 
+* Made by Dylan Smith 5/6/24
+* 
+*/
+
+
+
+
 /*TODO
-* refactor settings menu bc its kinda a mess lowk
-* spruce up menu
-* find a clean way to pause for the win message reliably
+* --now--
 * find new drop sound
-* maybe customizable keybinds
-* maybe distinction between hard and soft game close
+* controls visual
+*  - for menu
+*  - for gameplay + for sidebar
+*  -- updates based on if in sidebar
+* 
+* --if revisiting this project--
+* refactor settings menu bc its kinda a mess lowk
 * maybe mouse functionality 
 */
 
@@ -26,7 +40,7 @@ int WinMain(void) {
 
 	Menu mainMenu(menuWindow, font, gameTitle, {
 		"Play",
-		//"Settings", /*so many problems. i will fix later*/
+		"Settings",
 		"Exit"
 	});
 
@@ -34,12 +48,13 @@ int WinMain(void) {
 		"Board Width",
 		"Board Height",
 		"Win Requirement",
-		"Player Count"
+		"Player Count",
+		"Reset Settings"
 		}, {
-			{ { 1, 64 }, &settings.mBoardWidth },
-			{ { 1, 64 }, &settings.mBoardHeight },
-			{ { 1, 64 }, &settings.mWinRequirement },
-			{ { 1, 64 }, &settings.mPlayerCount }
+			{ { 2, 32 }, &settings.mBoardWidth },
+			{ { 2, 32 }, &settings.mBoardHeight },
+			{ { 2, 32 }, &settings.mWinRequirement },
+			{ { 2, 8 }, &settings.mPlayerCount }
 	});
 
 	ConnectFour c4(settings);
@@ -47,15 +62,30 @@ int WinMain(void) {
 	while (menuWindow.isOpen()) {
 		switch (mainMenu.runMenu()) {
 		case 0: //play
+		{
+			std::thread gameThread = c4.startGameInstance();
 			menuWindow.close();
-			c4.runGame();
+			gameThread.join();
 			menuWindow.create(sf::VideoMode(800, 600), gameTitle);
+		}
 			break;
 		case 1: //settings
-			//while (settingsMenu.runMenu() != -1);
-			//settingsMenu.resetSelection();
-			//settings.adjustPlayersByEnteredCount();
-			//break;
+		{
+			int out;
+			while (true) {
+				out = settingsMenu.runMenu();
+				//back
+				if (out == -1) break; 
+				//reset
+				else if (out == 4) {
+					Settings def;
+					settings = def;
+				};
+			}
+		}
+			settingsMenu.resetSelection();
+			settings.adjustPlayersByEnteredCount();
+			break;
 		case 2: //exit
 			menuWindow.close();
 			return 0;

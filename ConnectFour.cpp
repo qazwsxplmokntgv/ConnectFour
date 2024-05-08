@@ -1,71 +1,95 @@
 #include "ConnectFour.hpp"
 
-ConnectFour::ConnectFour(Settings& settings)
+ConnectFour::ConnectFour(Settings& settings) :
+	mSettings(settings), 
+	mMoveCount(0)
 {
-	this->mBoardHeight = settings.mBoardHeight;
-	this->mBoardWidth = settings.mBoardWidth;
-	this->mWinRequirement = settings.mWinRequirement;
-	this->mPlayers = &settings.mPlayerInfo;
-
-
-	this->mBoard.reserve(mBoardWidth);
-	for (int i = 0; i < mBoardWidth; ++i) {
+	this->mMaxMoves = mSettings.mBoardHeight * mSettings.mBoardWidth;
+	this->mBoard.reserve(mSettings.mBoardWidth);
+	for (int i = 0; i < mSettings.mBoardWidth; ++i) {
 		mBoard.push_back(std::vector<Token>());
-		mBoard.back().reserve(mBoardHeight);
+		mBoard.back().reserve(mSettings.mBoardHeight);
 	}
+}
+
+std::thread ConnectFour::startGameInstance()
+{
+	return std::thread([this] { runGame(); });
 }
 
 void ConnectFour::runGame(void)
 {
-	sf::RenderWindow window(
-		sf::VideoMode((unsigned int)tokenProp::radius * 2 * (mBoardWidth + (unsigned int)mPlayers->size()), (unsigned int)tokenProp::radius * 2 * mBoardHeight),
-		"Connect Four"
-	);
-	
-	//minimizes white window flash while below assets are being loaded by setting to black immediately
-	window.clear(sf::Color::Black);
-
-	int selectedCol = 0;
-	int currPlayer = 0;
-	int roundWinner = -1;
-	
-	//for tracking game progress
-	int moveCount = 0;
-	int maxMoves = mBoardHeight * mBoardWidth;
-
-	//load selection bar and set initial color (based on first player)
-	auto selectionBar = sf::RectangleShape(sf::Vector2f(tokenProp::radius * 2, (float)window.getSize().y));
-	selectionBar.setFillColor((*mPlayers)[0].getToken().getColor());
-
 	//load sound effects
 	sf::SoundBuffer drop;
 	sf::SoundBuffer win;
 	//drop.loadFromMemory(); //TODO: find a good drop sound
 	win.loadFromMemory(&Sounds::__300105_SYMBOL_WIN_REVEAL_01_Sounds_of_China_wav, Sounds::__300105_SYMBOL_WIN_REVEAL_01_Sounds_of_China_wav_len);
-	auto dropSound = sf::Sound(drop);
-	auto winSound = sf::Sound(win);
+	sf::Sound dropSound(drop);
+	sf::Sound winSound(win);
 
 	//load font
 	sf::Font font;
 	font.loadFromMemory(&Fonts::PixelifySans_ttf, Fonts::PixelifySans_ttf_len);
 
+	//load sidebar
+	const int sideBarButtonCount = 3;
+	std::array<sf::RectangleShape, sideBarButtonCount> sideBarBoxes;
+	std::array<sf::Text, sideBarButtonCount> sideBarTexts;
+	sideBarTexts[0].setString("Main\nMenu");
+	sideBarTexts[1].setString("Reset\nBoard");
+	sideBarTexts[2].setString("Reset\nScores");
+	for (int i = 0; i < sideBarButtonCount; ++i) {
+		sideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
+		sideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
+		sideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness); //reuses token outline size
+		sideBarBoxes[i].setOutlineColor(sf::Color(50, 50, 50));
+		sideBarTexts[i].setFont(font);
+		sideBarTexts[i].setOrigin(sideBarTexts[i].getLocalBounds().width / 2.f, sideBarTexts[i].getLocalBounds().height / 2.f);
+		sideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);
+	}
+
+	//load scoreboard background
+	sf::RectangleShape scoreBoardBackGround(sf::Vector2f(UnitSizes::tileSize * mSettings.mPlayerCount, UnitSizes::tileSize * mSettings.mBoardHeight));
+	scoreBoardBackGround.setFillColor(sf::Color(100, 100, 100));
+	scoreBoardBackGround.setOutlineThickness(UnitSizes::outlineThickness); //reuses token outline size
+	scoreBoardBackGround.setOutlineColor(sf::Color(50, 50, 50));
+	scoreBoardBackGround.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), 0);
+
+
 	//load scoreboard header
-	auto scoreBoard = sf::Text("Scoreboard", font);
+	sf::Text scoreBoard("Scoreboard", font);
 	scoreBoard.setOrigin(scoreBoard.getLocalBounds().width / 2.f, scoreBoard.getLocalBounds().height / 2.f);
-	scoreBoard.setPosition(2 * tokenProp::radius * (mBoardWidth + (mPlayers->size() / 2.f)), tokenProp::radius);
+	scoreBoard.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (mSettings.mPlayerCount / 2.f)), UnitSizes::tileSize / 2);
 
 	//generate labels for each player's section of the scoreboard
 	std::vector<sf::Text> playerScoreLabels;
-	playerScoreLabels.reserve(mPlayers->size());
-	for (int i = 0; i < mPlayers->size(); ++i) {
+	playerScoreLabels.reserve(mSettings.mPlayerInfo.size());
+	for (int i = 0; i < mSettings.mPlayerInfo.size(); ++i) {
 		auto label = sf::Text("P" + std::to_string(i + 1), font);
-		label.setFillColor((*mPlayers)[i].getToken().getColor());
-		label.setOrigin(label.getLocalBounds().width / 2, label.getLocalBounds().height / 2);
-		label.setPosition(((2 * (mBoardWidth + i)) + 1) * tokenProp::radius, 2 * tokenProp::radius);
-		
+		label.setFillColor(mSettings.mPlayerInfo[i].getToken().getColor());
+		label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+		label.setPosition((UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i) * UnitSizes::tileSize, UnitSizes::tileSize);
+
 		playerScoreLabels.push_back(label);
 	}
 
+	//load selection bar and set initial color (based on first player)
+	sf::RectangleShape selectionBar(sf::Vector2f(UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
+	selectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
+	selectionBar.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0);
+	selectionBar.setOutlineThickness(UnitSizes::outlineThickness);
+	selectionBar.setOutlineColor(sf::Color(0, 0, 0, 100));
+
+	int selectedCol = 0;
+	int currPlayer = 0;
+	int roundWinner = -1;
+
+	bool inSidebar = false;
+	int sideBarSelection = -1;
+
+	//game window
+	sf::RenderWindow window(sf::VideoMode((unsigned int)UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (unsigned int)mSettings.mPlayerCount), (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight), "Connect Four");
+	
 	//game loop
 	while (window.isOpen()) {
 
@@ -84,46 +108,84 @@ void ConnectFour::runGame(void)
 
 				case sf::Keyboard::Scan::Left:
 				case sf::Keyboard::Scan::A:
-					//scroll selected column left
-					if (--selectedCol < 0) selectedCol = mBoardWidth - 1;
-					selectionBar.setPosition(selectedCol * tokenProp::radius * 2, 0);
+					if (inSidebar) {
+						//select
+						switch (sideBarSelection) {
+						case 0: //main menu
+							window.close();
+							break;
+						case 1: //reset board
+							resetBoard();
+							break;
+						case 2: //reset scores
+							resetScores();
+							break;
+						}
+					}
+					else {
+						//scroll selected column left
+						if (--selectedCol < 0) selectedCol = mSettings.mBoardWidth - 1;
+						selectionBar.setPosition((selectedCol + UnitSizes::sideBarWidth) * UnitSizes::tileSize, 0);
+					}
 					break;
 
 				case sf::Keyboard::Scan::Right:
 				case sf::Keyboard::Scan::D:
-					//scroll selected column right
-					if (++selectedCol >= mBoardWidth) selectedCol = 0;
-					selectionBar.setPosition(selectedCol * tokenProp::radius * 2, 0);
+					if (inSidebar) {
+						//exit sidebar
+						inSidebar = false;
+						sideBarSelection = -1;
+					}
+					else {
+						//scroll selected column right
+						if (++selectedCol >= mSettings.mBoardWidth) selectedCol = 0;
+						selectionBar.setPosition((selectedCol + UnitSizes::sideBarWidth) * UnitSizes::tileSize, 0);
+					}
+					break;
+
+				case sf::Keyboard::Scan::Up:
+				case sf::Keyboard::Scan::W:
+					if (inSidebar) {
+						//scroll up
+						if (--sideBarSelection < 0) sideBarSelection = sideBarButtonCount - 1;
+					}
+					else {
+						//enter sidebar
+						inSidebar = true;
+						sideBarSelection = 0;
+					}
 					break;
 
 				case sf::Keyboard::Scan::Down:
 				case sf::Keyboard::Scan::S:
-				case sf::Keyboard::Scan::Space:
-				case sf::Keyboard::Scan::Enter:
-					//make move
-					if (makeMove(currPlayer, selectedCol)) {
-						//win checking
-						if (checkForWin(selectedCol, (int)mBoard[selectedCol].size() - 1)) {
-							roundWinner = currPlayer;
-							winSound.play();
-						}
-						else {
+				case sf::Keyboard::Space:
+				case sf::Keyboard::Enter:
+					if (inSidebar) {
+						//scroll down
+						if (++sideBarSelection >= sideBarButtonCount) sideBarSelection = 0;
+
+					}
+					else {
+						//make move
+						if (makeMove(currPlayer, selectedCol)) {
 							dropSound.play();
 
-							//checks for draws, resets automatically if the board is filled
-							if (++moveCount >= maxMoves) resetBoard();
-						}
+							//win checking
+							if (checkForWin(selectedCol, (int)mBoard[selectedCol].size() - 1))
+								roundWinner = currPlayer;
+							//checks for draws, resets board if is filled
+							else if (++mMoveCount >= mMaxMoves)
+								resetBoard();
 
-						//switches to the next player's turn
-						if (++currPlayer >= mPlayers->size()) currPlayer = 0;
-						//recolors the selection bar appropriately (based on the new current player)
-						selectionBar.setFillColor((*mPlayers)[currPlayer].getToken().getColor());
+							//switches to the next player's turn
+							if (++currPlayer >= mSettings.mPlayerCount) currPlayer = 0;
+
+							//recolors the selection bar appropriately (based on the new current player)
+							selectionBar.setFillColor(mSettings.mPlayerInfo[currPlayer].getToken().getColor());
+						}
 					}
 					break;
 				}
-				break;
-
-			default:
 				break;
 			}
 		}
@@ -131,64 +193,83 @@ void ConnectFour::runGame(void)
 		//rendering
 		window.clear(sf::Color::Black);
 
-		window.draw(selectionBar);
-		
+		if(!inSidebar) window.draw(selectionBar);
 
+		//draws sidebar
+		for (auto& sideBarBox : sideBarBoxes)
+			window.draw(sideBarBox);
+		for (auto& sideBarText : sideBarTexts)
+			window.draw(sideBarText);
+		
 		//draws board
 		for (const auto& col : mBoard) {
 			for (const auto& token : col) {
 				window.draw(token.getTokenGraphic());
 			}
 		}
-		
-		//if a player wins, 
-		if (roundWinner != -1) {
-
-			(*mPlayers)[roundWinner].incWinCount();
-
-			//win message 
-			//CURRENTLY DOES NOT PAUSE--effectively skips this message being shown for the time being
-			auto winText = sf::Text("Player " + std::to_string(roundWinner + 1) + " wins!\n(Press any key to continue)", font);
-			winText.setOutlineThickness(4.f);
-			winText.setOutlineColor(sf::Color::Black);
-			window.draw(winText);
-
-			resetBoard();
-			roundWinner = -1;
+	
+		for (int i = 0; i < sideBarButtonCount; ++i) {
+			if (i == sideBarSelection) sideBarBoxes[i].setFillColor(sf::Color(60, 60, 60));
+			else sideBarBoxes[i].setFillColor(sf::Color(100, 100, 100));
 		}
 
-		//draw scoreboard
+		//draws scoreboard
+		//background
+		window.draw(scoreBoardBackGround);
 		//main header
 		window.draw(scoreBoard); 
 		//player headers
 		for (const auto& label : playerScoreLabels) 
 			window.draw(label);
 		//player scores
-		for (auto& player : *mPlayers) {
-			auto score = sf::Text(std::to_string(player.getWinCount()), font);
+		for (int i = 0; i < mSettings.mPlayerCount; ++i) {
+			sf::Text score(std::to_string(mSettings.mPlayerInfo[i].getWinCount()), font);
 			score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);
-			score.setPosition(tokenProp::radius * (1.f + (2.f * (mBoardWidth + player.getToken().getID()))), tokenProp::radius * 3.f);
+			//vertically aligned with labels
+			score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
 			window.draw(score);
 		}
 
-		window.display();
+		//win handling
+		if (roundWinner != -1) {
+			winSound.play();
+
+			mSettings.mPlayerInfo[roundWinner].incWinCount();
+
+			//win message 
+			sf::Text winText("Player " + std::to_string(roundWinner + 1) + " wins!\n(Press any key to continue)", font);
+			winText.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .5f), UnitSizes::tileSize * .5f);
+			winText.setOutlineThickness(4.f);
+			winText.setOutlineColor(sf::Color::Black);
+			window.draw(winText);
+
+			window.display();
+
+			resetBoard();
+			roundWinner = -1;
+
+			//pause on win until keypress
+			do window.waitEvent(event);
+			while (event.type != sf::Event::KeyPressed);
+		}
+		else window.display();
 	}
 }
 
 bool ConnectFour::makeMove(int player, int column)
 {
 	//disallows placing tokens above the board
-	if (mBoard[column].size() >= mBoardHeight)
+	if (mBoard[column].size() >= mSettings.mBoardHeight)
 		//indicates no move was successfully made
 		return false;
 
 	//adds a token to the appropriate column
-	mBoard[column].push_back((*mPlayers)[player].getToken());
+	mBoard[column].push_back((mSettings.mPlayerInfo)[player].getToken());
 	
 	//sets position for the token to be rendered in
 	mBoard[column].back().setPosition(
-		(2 * tokenProp::radius) * (float)column, //x
-		(2 * tokenProp::radius) * (mBoardHeight - (float)mBoard[column].size()) //y
+		(UnitSizes::tileSize) * (column + UnitSizes::sideBarWidth), //x 
+		(UnitSizes::tileSize) * (mSettings.mBoardHeight - mBoard[column].size()) //y
 	);
 
 	//indicates successful entry of a move
@@ -202,13 +283,13 @@ bool ConnectFour::checkForWin(int lastX, int lastY) const
 
 	//checks for vertical win
 	//if this column is tall enough for this possibility
-	if (mBoard[lastX].size() >= mWinRequirement) {
+	if (mBoard[lastX].size() >= mSettings.mWinRequirement) {
 		//scans down thru this column from the toMatch token
-		for (int i = 1; i <= mWinRequirement; ) {
+		for (int i = 1; i <= mSettings.mWinRequirement; ) {
 			//continue iff the sequence stays unbroken
 			if (mBoard[lastX][(size_t)lastY - i] != toMatch) break;
 			//if a vertical sequence was found, report win
-			if (++i >= mWinRequirement) return true;
+			if (++i >= mSettings.mWinRequirement) return true;
 		}
 	}
 
@@ -218,7 +299,7 @@ bool ConnectFour::checkForWin(int lastX, int lastY) const
 	
 	//checks left side of this column
 	bool continueCheckingOnLeft[3] = { true, true, true };
-	for (int i = 1; i < mWinRequirement; ++i) {
+	for (int i = 1; i < mSettings.mWinRequirement; ++i) {
 
 		//if there exists columns to the left no more than i tokens shorter than this column
 		if (lastX - i >= 0 && (int)mBoard[(size_t)lastX - i].size() > lastY - i) {
@@ -239,14 +320,14 @@ bool ConnectFour::checkForWin(int lastX, int lastY) const
 		}
 	}
 	//checks if a full sequence was foud on the left
-	for (int count : countsOfBranches) if (count >= mWinRequirement) return true;
+	for (int count : countsOfBranches) if (count >= mSettings.mWinRequirement) return true;
 
 	//top right, right, bottom right (opposite corresponding left branches)
 	bool continueCheckingOnRight[3] = { true, true, true };
-	for (int i = 1; i < mWinRequirement; ++i) {
+	for (int i = 1; i < mSettings.mWinRequirement; ++i) {
 
 		//if there exists columns to the right && if those are no more than i tokens shorter than this column
-		if (lastX + i < mBoardWidth && (int)mBoard[(size_t)lastX + i].size() > lastY - i) {
+		if (lastX + i < mSettings.mBoardWidth && (int)mBoard[(size_t)lastX + i].size() > lastY - i) {
 			if (continueCheckingOnRight[2] && lastY - i >= 0 && mBoard[(size_t)lastX + i][(size_t)lastY - i] == toMatch) ++countsOfBranches[2];
 			else continueCheckingOnRight[2] = false;
 
@@ -262,8 +343,7 @@ bool ConnectFour::checkForWin(int lastX, int lastY) const
 				}
 			}
 			//checks if a full sequence has been found yet between the sum of the corresponding left and right branches
-			//only checks if at least one branch continues to check
-			for (int count : countsOfBranches) if (count >= mWinRequirement) return true;
+			for (int count : countsOfBranches) if (count >= mSettings.mWinRequirement) return true;
 		}
 	}
 	//no sufficient sequence was found
@@ -274,4 +354,12 @@ void ConnectFour::resetBoard(void)
 {
 	//clears each column
 	for (auto& col : mBoard) col.clear();
+
+	//resets move counter
+	mMoveCount = 0;
+}
+
+void ConnectFour::resetScores(void)
+{
+	for (auto& player : mSettings.mPlayerInfo) player.resetWinCount();
 }

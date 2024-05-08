@@ -63,7 +63,8 @@ void IncremOptMenu::inputLeft()
 
 void IncremOptMenu::inputRight()
 {
-	if (!mIncrementMode) {
+	//does not allow increment mode for options that do not have properties provided
+	if (!mIncrementMode && mOptProperties.size() > mCurrSelection) {
 		mIncrementMode = true;
 		mAdditionalDynamicText[0].setString(std::to_string(*(mOptProperties[mCurrSelection].mOptValue)));
 		mAdditionalDynamicText[0].setOrigin(mAdditionalDynamicText[0].getLocalBounds().width / 2.f, mAdditionalDynamicText[0].getLocalBounds().height / 2.f);

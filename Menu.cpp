@@ -1,18 +1,31 @@
 #include "Menu.hpp"
 
+Menu::Menu(sf::RenderWindow& window, sf::Font& font, std::string title, std::vector<std::string> opts, bool isSubMenu, bool* shouldIncludeAdditionalElements) :
+	mWindow(window),
+	mFont(font),
+	mMenuOptions(opts),
+	mCurrSelection(0),
+	mIsSubMenu(isSubMenu),
+	mPersistInMenu(true),
+	mShouldIncludeAdditionalElements(shouldIncludeAdditionalElements) 
+{
+	mTitle = sf::Text(title, mFont);
+	mTitle.setOrigin(mTitle.getLocalBounds().width / 2.f, mTitle.getLocalBounds().height / 2.f);
+	mTitle.setPosition(mWindow.getSize().x / 2.f, mWindow.getSize().y / 8.f);
+
+	sf::SoundBuffer keypress;
+	keypress.loadFromMemory(&Sounds::click_button_140881_mp3, Sounds::click_button_140881_mp3_len);
+	sf::Sound keypressSound(keypress);
+	keypressSound.setVolume(20);
+}
 int Menu::runMenu()
 {
-	//loads & positions menu title
-	auto title = sf::Text(mTitle, mFont);
-	title.setOrigin(title.getLocalBounds().width / 2.f, title.getLocalBounds().height / 2.f);
-	title.setPosition(mWindow.getSize().x / 2.f, mWindow.getSize().y / 8.f);
-
 	//if the elements of which ever menu type is being ran haven't been loaded, load them
 	if (mAdditionalStaticElements.size() == 0) this->loadAdditionalStaticElements();
 	if (mAdditionalDynamicText.size() == 0) this->loadAdditionalDynamicText();
 
 	//run menu
-	while (mWindow.isOpen() && mPersistInMenu) {
+	while (mPersistInMenu && mWindow.isOpen()) {
 		//event loop
 		sf::Event event;
 		while (mWindow.pollEvent(event)) {
@@ -34,11 +47,13 @@ int Menu::runMenu()
 				case sf::Keyboard::Scan::Down:
 				case sf::Keyboard::Scan::S:
 					//scroll down
+					mKeypressSound.play();
 					inputDown();
 					break;
 				case sf::Keyboard::Scan::Up:
 				case sf::Keyboard::Scan::W:
 					//scroll up
+					mKeypressSound.play();
 					inputUp();
 					break;
 				case sf::Keyboard::Scan::Right:
@@ -46,18 +61,17 @@ int Menu::runMenu()
 				case sf::Keyboard::Scan::Space:
 				case sf::Keyboard::Scan::Enter:
 					//advance (select)
+					mKeypressSound.play();
 					inputRight();
 					break;
 				case sf::Keyboard::Scan::Left:
 				case sf::Keyboard::Scan::A:
 				case sf::Keyboard::Scan::Escape:
 					//back (exit)
+					mKeypressSound.play();
 					inputLeft();
 					break;
 				}
-				break;
-
-			default:
 				break;
 			}
 		}
@@ -65,7 +79,7 @@ int Menu::runMenu()
 		//rendering
 		mWindow.clear(sf::Color::Black);
 
-		mWindow.draw(title);
+		mWindow.draw(mTitle);
 
 		for (int i = 0; i < mMenuOptions.size(); ++i) {
 			auto opt = sf::Text(mMenuOptions[i], mFont);

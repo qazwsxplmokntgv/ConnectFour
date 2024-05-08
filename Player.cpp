@@ -14,3 +14,8 @@ void Player::incWinCount(void)
 {
 	++mWinCount;
 }
+
+void Player::resetWinCount(void)
+{
+	mWinCount = 0;
+}
