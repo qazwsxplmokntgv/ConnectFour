@@ -77,17 +77,99 @@ void ConnectFour::runGame(void)
 			scoreBoardTexture.draw(label);
 		}
 
-		scoreBoardTexture.display();
 	}
+	scoreBoardTexture.display();
 	sf::Sprite scoreBoard(scoreBoardTexture.getTexture());
 	scoreBoard.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), 0);
 
 
 	//controls diagrams
-	sf::RenderTexture gameControlVisual, sideBarControlVisual;
+	sf::RenderTexture gameControlTexture, sideBarControlTexture;
+	gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth);
+	gameControlTexture.clear(sf::Color::Transparent);
+	sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth);
+	sideBarControlTexture.clear(sf::Color::Transparent);
 	{
+		//arrows corresponding to directions (ie user inputs via wasd/arrows)
+		sf::ConvexShape arrow(3);
+		arrow.setPoint(0, sf::Vector2f(0, UnitSizes::tileSize * .3f));
+		arrow.setPoint(1, sf::Vector2f(UnitSizes::tileSize * .15f, 0));
+		arrow.setPoint(2, sf::Vector2f(UnitSizes::tileSize * .3f, UnitSizes::tileSize * .3f));
+		arrow.setOrigin(sf::Vector2f(UnitSizes::tileSize * .15f, UnitSizes::tileSize * .5f));
+		arrow.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		
+		gameControlTexture.draw(arrow);
+		sideBarControlTexture.draw(arrow);
 
+		//add these arrows to both versions of the diagram
+		for (int i = 0; i < 3; ++i) {
+			arrow.rotate(90);
+			gameControlTexture.draw(arrow);
+			sideBarControlTexture.draw(arrow);
+		}
+
+		//labels to pair with each arrow indicating function
+		std::array<sf::Text, 4> controlLabels;
+
+		controlLabels[0] = sf::Text("Sidebar", font); //up
+		controlLabels[1] = sf::Text("Drop", font); //down
+		controlLabels[2] = sf::Text("Scroll", font); //left
+		controlLabels[3] = sf::Text("Scroll", font); //right
+
+		//centers origins of each label based on the game controls strings
+		for (auto& label : controlLabels)
+			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+		
+		//rotates left and right labels to fit better
+		controlLabels[2].rotate(90);
+		controlLabels[3].rotate(270);
+
+		const float distFromDiagramEdges = .3f * UnitSizes::tileSize;
+
+		//places each label
+		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
+		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
+		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+
+		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
+		for (auto& label : controlLabels) {
+			label.move(0, -.1f * UnitSizes::tileSize);
+			gameControlTexture.draw(label);
+		}
+
+		gameControlTexture.display();
+
+		//switches the contents of each label to the sidebar navigation version
+		controlLabels[0].setString("Scroll");
+		controlLabels[1].setString("Scroll");
+		controlLabels[2].setString("Select");
+		controlLabels[3].setString("Back");
+
+
+		//adjusts label origins based on these new strings
+		for (auto& label : controlLabels)
+			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+
+		//adjusts placement based on new origins to center
+		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
+		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
+		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+
+		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
+		for (auto& label : controlLabels) {
+			label.move(0, -.1f * UnitSizes::tileSize);
+			sideBarControlTexture.draw(label);
+		}
+
+		sideBarControlTexture.display();
 	}
+
+	sf::Sprite gameControlVisual(gameControlTexture.getTexture());
+	sf::Sprite sideBarControlVisual(sideBarControlTexture.getTexture());
+	gameControlVisual.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
+	sideBarControlVisual.setPosition(gameControlVisual.getPosition());
 
 	//load selection bar and set initial color (based on first player)
 	sf::RectangleShape selectionBar(sf::Vector2f(UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
@@ -102,6 +184,7 @@ void ConnectFour::runGame(void)
 
 	bool inSidebar = false;
 	int sideBarSelection = -1;
+	int lastSideBarSelection = 0;
 
 	//game window
 	sf::RenderWindow window(sf::VideoMode((unsigned int)UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (unsigned int)mSettings.mPlayerCount), (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight), "Connect Four");
@@ -150,6 +233,7 @@ void ConnectFour::runGame(void)
 					if (inSidebar) {
 						//exit sidebar
 						inSidebar = false;
+						lastSideBarSelection = sideBarSelection;
 						sideBarSelection = -1;
 					}
 					else {
@@ -168,14 +252,12 @@ void ConnectFour::runGame(void)
 					else {
 						//enter sidebar
 						inSidebar = true;
-						sideBarSelection = 0;
+						sideBarSelection = lastSideBarSelection;
 					}
 					break;
 
 				case sf::Keyboard::Scan::Down:
 				case sf::Keyboard::Scan::S:
-				case sf::Keyboard::Space:
-				case sf::Keyboard::Enter:
 					if (inSidebar) {
 						//scroll down
 						if (++sideBarSelection >= sideBarButtonCount) sideBarSelection = 0;
@@ -228,6 +310,12 @@ void ConnectFour::runGame(void)
 			score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
 			window.draw(score);
 		}
+
+		//controls diagram
+		if (inSidebar)
+			window.draw(sideBarControlVisual);
+		else 
+			window.draw(gameControlVisual);
 
 		//sidebar
 		for (int i = 0; i < sideBarButtonCount; ++i) {

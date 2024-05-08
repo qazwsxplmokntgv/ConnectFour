@@ -60,18 +60,19 @@ int WinMain(void) {
 
 	ConnectFour c4(settings);
 
+	std::thread gameThread;
+
 	while (menuWindow.isOpen()) {
 		switch (mainMenu.runMenu()) {
 		case 0: //new game
 			c4.resetBoard();
 			c4.resetScores();
+			[[fallthrough]];
 		case 1: //resume game
-		{
-			std::thread gameThread = c4.startGameInstance();
+			gameThread = c4.startGameInstance();
 			menuWindow.close();
 			gameThread.join();
 			menuWindow.create(sf::VideoMode(800, 600), gameTitle);
-		}
 			break;
 		case 2: //settings
 		{
