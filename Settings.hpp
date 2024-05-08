@@ -3,6 +3,7 @@
 #define SETTINGS_H
 
 #include "Player.hpp"
+#include <vector>
 #include <array>
 #include <vector>
 

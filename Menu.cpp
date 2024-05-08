@@ -105,7 +105,7 @@ void Menu::inputDown(void)
 void Menu::inputUp(void)
 {
 	if (--mCurrSelection < 0) mCurrSelection = (int)mMenuOptions.size() - 1;
-}
+		}
 
 void Menu::inputLeft(void)
 {
@@ -113,7 +113,7 @@ void Menu::inputLeft(void)
 	if (!mIsSubMenu) return;
 	mPersistInMenu = false;
 	mCurrSelection = -1;
-}
+	}
 
 void Menu::inputRight(void)
 {
