@@ -20,6 +20,10 @@ public:
 	ConnectFour(Settings& settings);
 
 	std::thread startGameInstance();
+	
+	void resetBoard(void);
+
+	void resetScores(void);
 
 private:
 	void runGame(void);
@@ -30,9 +34,7 @@ private:
 	//only checks for lines involving the most recent move to avoid redundant checks in unchanged parts of the board
 	bool checkForWin(int lastX, int lastY) const;
 
-	void resetBoard(void);
 
-	void resetScores(void);
 
 	Settings& mSettings;
 

@@ -39,7 +39,8 @@ int WinMain(void) {
 	font.loadFromMemory(&Fonts::PixelifySans_ttf, Fonts::PixelifySans_ttf_len);
 
 	Menu mainMenu(menuWindow, font, gameTitle, {
-		"Play",
+		"New Game",
+		"Resume Game",
 		"Settings",
 		"Exit"
 	});
@@ -61,7 +62,10 @@ int WinMain(void) {
 
 	while (menuWindow.isOpen()) {
 		switch (mainMenu.runMenu()) {
-		case 0: //play
+		case 0: //new game
+			c4.resetBoard();
+			c4.resetScores();
+		case 1: //resume game
 		{
 			std::thread gameThread = c4.startGameInstance();
 			menuWindow.close();
@@ -69,7 +73,7 @@ int WinMain(void) {
 			menuWindow.create(sf::VideoMode(800, 600), gameTitle);
 		}
 			break;
-		case 1: //settings
+		case 2: //settings
 		{
 			int out;
 			while (true) {
@@ -86,7 +90,7 @@ int WinMain(void) {
 			settingsMenu.resetSelection();
 			settings.adjustPlayersByEnteredCount();
 			break;
-		case 2: //exit
+		case 3: //exit
 			menuWindow.close();
 			return 0;
 		default:

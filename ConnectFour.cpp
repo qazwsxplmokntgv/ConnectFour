@@ -40,36 +40,53 @@ void ConnectFour::runGame(void)
 	for (int i = 0; i < sideBarButtonCount; ++i) {
 		sideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
 		sideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
-		sideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness); //reuses token outline size
+		sideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness); 
 		sideBarBoxes[i].setOutlineColor(sf::Color(50, 50, 50));
 		sideBarTexts[i].setFont(font);
 		sideBarTexts[i].setOrigin(sideBarTexts[i].getLocalBounds().width / 2.f, sideBarTexts[i].getLocalBounds().height / 2.f);
 		sideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);
 	}
 
-	//load scoreboard background
-	sf::RectangleShape scoreBoardBackGround(sf::Vector2f(UnitSizes::tileSize * mSettings.mPlayerCount, UnitSizes::tileSize * mSettings.mBoardHeight));
-	scoreBoardBackGround.setFillColor(sf::Color(100, 100, 100));
-	scoreBoardBackGround.setOutlineThickness(UnitSizes::outlineThickness); //reuses token outline size
-	scoreBoardBackGround.setOutlineColor(sf::Color(50, 50, 50));
-	scoreBoardBackGround.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), 0);
+	//load scoreboard
+	sf::RenderTexture scoreBoardTexture;
+	scoreBoardTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mPlayerCount, (unsigned int) UnitSizes::tileSize * mSettings.mBoardHeight);
+	scoreBoardTexture.clear(sf::Color::Black);
+	{
+		//create scoreboard background
+		sf::RectangleShape scoreBoardBackGround(sf::Vector2f(UnitSizes::tileSize * mSettings.mPlayerCount, UnitSizes::tileSize * mSettings.mBoardHeight));
+		scoreBoardBackGround.setFillColor(sf::Color(100, 100, 100));
+		scoreBoardBackGround.setOutlineThickness(UnitSizes::outlineThickness);
+		scoreBoardBackGround.setOutlineColor(sf::Color(50, 50, 50));
+
+		scoreBoardTexture.draw(scoreBoardBackGround);
+
+		//create main header
+		sf::Text header("Scoreboard", font);
+		header.setOrigin(header.getLocalBounds().width / 2.f, header.getLocalBounds().height / 2.f);
+		header.setPosition(UnitSizes::tileSize * mSettings.mPlayerCount / 2.f, UnitSizes::tileSize / 2.f);
+
+		scoreBoardTexture.draw(header);
+
+		//create individual labels for each player
+		for (int i = 0; i < mSettings.mPlayerInfo.size(); ++i) {
+			auto label = sf::Text("P" + std::to_string(i + 1), font);
+			label.setFillColor(mSettings.mPlayerInfo[i].getToken().getColor());
+			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+			label.setPosition((.5f + i) * UnitSizes::tileSize, UnitSizes::tileSize);
+
+			scoreBoardTexture.draw(label);
+		}
+
+		scoreBoardTexture.display();
+	}
+	sf::Sprite scoreBoard(scoreBoardTexture.getTexture());
+	scoreBoard.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), 0);
 
 
-	//load scoreboard header
-	sf::Text scoreBoard("Scoreboard", font);
-	scoreBoard.setOrigin(scoreBoard.getLocalBounds().width / 2.f, scoreBoard.getLocalBounds().height / 2.f);
-	scoreBoard.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (mSettings.mPlayerCount / 2.f)), UnitSizes::tileSize / 2);
+	//controls diagrams
+	sf::RenderTexture gameControlVisual, sideBarControlVisual;
+	{
 
-	//generate labels for each player's section of the scoreboard
-	std::vector<sf::Text> playerScoreLabels;
-	playerScoreLabels.reserve(mSettings.mPlayerInfo.size());
-	for (int i = 0; i < mSettings.mPlayerInfo.size(); ++i) {
-		auto label = sf::Text("P" + std::to_string(i + 1), font);
-		label.setFillColor(mSettings.mPlayerInfo[i].getToken().getColor());
-		label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
-		label.setPosition((UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i) * UnitSizes::tileSize, UnitSizes::tileSize);
-
-		playerScoreLabels.push_back(label);
 	}
 
 	//load selection bar and set initial color (based on first player)
@@ -192,35 +209,18 @@ void ConnectFour::runGame(void)
 		//rendering
 		window.clear(sf::Color::Black);
 
+		//selection indicator
 		if(!inSidebar) window.draw(selectionBar);
-
-		//draws sidebar
-		for (auto& sideBarBox : sideBarBoxes)
-			window.draw(sideBarBox);
-		for (auto& sideBarText : sideBarTexts)
-			window.draw(sideBarText);
-		
-		//draws board
+	
+		//board
 		for (const auto& col : mBoard) {
 			for (const auto& token : col) {
 				window.draw(token.getTokenGraphic());
 			}
 		}
-	
-		for (int i = 0; i < sideBarButtonCount; ++i) {
-			if (i == sideBarSelection) sideBarBoxes[i].setFillColor(sf::Color(60, 60, 60));
-			else sideBarBoxes[i].setFillColor(sf::Color(100, 100, 100));
-		}
 
-		//draws scoreboard
-		//background
-		window.draw(scoreBoardBackGround);
-		//main header
-		window.draw(scoreBoard); 
-		//player headers
-		for (const auto& label : playerScoreLabels) 
-			window.draw(label);
-		//player scores
+		//scoreboard
+		window.draw(scoreBoard);
 		for (int i = 0; i < mSettings.mPlayerCount; ++i) {
 			sf::Text score(std::to_string(mSettings.mPlayerInfo[i].getWinCount()), font);
 			score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);
@@ -228,6 +228,17 @@ void ConnectFour::runGame(void)
 			score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
 			window.draw(score);
 		}
+
+		//sidebar
+		for (int i = 0; i < sideBarButtonCount; ++i) {
+			//sets color to indicate selection
+			if (i == sideBarSelection) sideBarBoxes[i].setFillColor(sf::Color(60, 60, 60));
+			else sideBarBoxes[i].setFillColor(sf::Color(100, 100, 100));
+		}
+		for (auto& sideBarBox : sideBarBoxes)
+			window.draw(sideBarBox);
+		for (auto& sideBarText : sideBarTexts)
+			window.draw(sideBarText);
 
 		//win handling
 		if (roundWinner != -1) {
