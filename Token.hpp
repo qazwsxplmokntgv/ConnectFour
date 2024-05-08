@@ -18,6 +18,8 @@ public:
 	sf::Color getColor(void) const;
 
 	void setPosition(float x, float y);
+
+	bool operator==(const Token& rhs) const;
 private:
 	int mPlayerID;
 	sf::CircleShape mTokenGraphic;

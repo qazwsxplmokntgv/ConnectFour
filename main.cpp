@@ -1,61 +1,67 @@
 #include "ConnectFour.hpp"
 #include "Settings.hpp"
+#include "Fonts.hpp"
 #include "Menu.hpp"
+#include "IncremOptMenu.hpp"
 
 
 /*TODO
+* refactor settings menu bc its kinda a mess lowk
 * spruce up menu
-* settings changeability & associated ui stuff
 * find a clean way to pause for the win message reliably
 * find new drop sound
-* distinction between hard and soft game close
+* maybe customizable keybinds
+* maybe distinction between hard and soft game close
 * maybe mouse functionality 
 */
 
-int main(void) {
+int WinMain(void) {
+	std::string gameTitle("Connect Four");
+
 	Settings settings;
-	sf::RenderWindow menuWindow(sf::VideoMode(800, 600), "Connect Four");
+	auto menuWindow = sf::RenderWindow(sf::VideoMode(800, 600), gameTitle);
 
+	sf::Font font;
+	font.loadFromMemory(&Fonts::PixelifySans_ttf, Fonts::PixelifySans_ttf_len);
 
-	Menu mainMenu("Connect Four", {
+	Menu mainMenu(menuWindow, font, gameTitle, {
 		"Play",
-		"Settings",
+		//"Settings", /*so many problems. i will fix later*/
 		"Exit"
 	});
 
-	Menu settingsMenu("Settings", {
+	IncremOptMenu settingsMenu(menuWindow, font, "Settings", {
 		"Board Width",
 		"Board Height",
-		"Win Sequence Requirement",
+		"Win Requirement",
 		"Player Count"
-		"Back"
+		}, {
+			{ { 1, 64 }, &settings.mBoardWidth },
+			{ { 1, 64 }, &settings.mBoardHeight },
+			{ { 1, 64 }, &settings.mWinRequirement },
+			{ { 1, 64 }, &settings.mPlayerCount }
 	});
 
 	ConnectFour c4(settings);
 
-	while (true) {
-		switch (mainMenu.runMenu(menuWindow)) {
+	while (menuWindow.isOpen()) {
+		switch (mainMenu.runMenu()) {
 		case 0: //play
 			menuWindow.close();
 			c4.runGame();
-			return 0;
-		case 1: //settings
-			switch (settingsMenu.runMenu(menuWindow)) {
-			case 0: //width
-				break;
-			case 1: //height
-				break;
-			case 2: //win req
-				break;
-			case 3: //player count
-				break;
-			default: //back
-				continue;
-			}
+			menuWindow.create(sf::VideoMode(800, 600), gameTitle);
 			break;
-		default: //exit
-			if (menuWindow.isOpen()) menuWindow.close();
+		case 1: //settings
+			while (settingsMenu.runMenu() != -1);
+			settingsMenu.resetSelection();
+			settings.adjustPlayersByEnteredCount();
+			break;
+		case 2: //exit
+			menuWindow.close();
 			return 0;
+		default:
+			break;
 		}
 	}
+	return 1;
 }

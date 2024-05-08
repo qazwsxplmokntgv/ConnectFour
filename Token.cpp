@@ -28,3 +28,8 @@ void Token::setPosition(float x, float y)
 {
 	mTokenGraphic.setPosition(x, y);
 }
+
+bool Token::operator==(const Token& rhs) const
+{
+	return this->mPlayerID == rhs.mPlayerID;
+}

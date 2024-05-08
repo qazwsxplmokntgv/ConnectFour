@@ -33,6 +33,9 @@
     <ClCompile Include="Settings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="IncremOptMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectFour.hpp">
@@ -50,20 +53,14 @@
     <ClInclude Include="Menu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Font Include="PixelifySans.ttf">
+    <ClInclude Include="IncremOptMenu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Fonts.hpp">
       <Filter>Resource Files</Filter>
-    </Font>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config">
+    </ClInclude>
+    <ClInclude Include="Sounds.hpp">
       <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Media Include="300105-SYMBOL-WIN-REVEAL-01-Sounds-of-China.wav">
-      <Filter>Resource Files</Filter>
-    </Media>
+    </ClInclude>
   </ItemGroup>
 </Project>
