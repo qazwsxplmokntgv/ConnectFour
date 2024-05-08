@@ -21,10 +21,14 @@ void ConnectFour::runGame(void)
 	//load sound effects
 	sf::SoundBuffer drop;
 	sf::SoundBuffer win;
-	//drop.loadFromMemory(); //TODO: find a good drop sound
-	win.loadFromMemory(&Sounds::__300105_SYMBOL_WIN_REVEAL_01_Sounds_of_China_wav, Sounds::__300105_SYMBOL_WIN_REVEAL_01_Sounds_of_China_wav_len);
+	sf::SoundBuffer sideBar;
+	drop.loadFromMemory(&Sounds::pop_wav, Sounds::pop_wav_len); 
+	win.loadFromMemory(&Sounds::win_wav, Sounds::win_wav_len);
+	sideBar.loadFromMemory(&Sounds::click_mp3, Sounds::click_mp3_len);
 	sf::Sound dropSound(drop);
 	sf::Sound winSound(win);
+	sf::Sound sideBarSound(sideBar);
+	sideBarSound.setVolume(20);
 
 	//load font
 	sf::Font font;
@@ -34,24 +38,27 @@ void ConnectFour::runGame(void)
 	const int sideBarButtonCount = 3;
 	std::array<sf::RectangleShape, sideBarButtonCount> sideBarBoxes;
 	std::array<sf::Text, sideBarButtonCount> sideBarTexts;
-	sideBarTexts[0].setString("Main\nMenu");
-	sideBarTexts[1].setString("Reset\nBoard");
-	sideBarTexts[2].setString("Reset\nScores");
-	for (int i = 0; i < sideBarButtonCount; ++i) {
-		sideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
-		sideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
-		sideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness); 
-		sideBarBoxes[i].setOutlineColor(sf::Color(50, 50, 50));
-		sideBarTexts[i].setFont(font);
-		sideBarTexts[i].setOrigin(sideBarTexts[i].getLocalBounds().width / 2.f, sideBarTexts[i].getLocalBounds().height / 2.f);
-		sideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);
+	{
+		sideBarTexts[0].setString("Main\nMenu");
+		sideBarTexts[1].setString("Reset\nBoard");
+		sideBarTexts[2].setString("Reset\nScores");
+		for (int i = 0; i < sideBarButtonCount; ++i) {
+			sideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
+			sideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
+			sideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness); 
+			sideBarBoxes[i].setOutlineColor(sf::Color(50, 50, 50));
+			sideBarTexts[i].setFont(font);
+			sideBarTexts[i].setOrigin(sideBarTexts[i].getLocalBounds().width / 2.f, sideBarTexts[i].getLocalBounds().height / 2.f);
+			sideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);
+		}
 	}
 
 	//load scoreboard
 	sf::RenderTexture scoreBoardTexture;
-	scoreBoardTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mPlayerCount, (unsigned int) UnitSizes::tileSize * mSettings.mBoardHeight);
-	scoreBoardTexture.clear(sf::Color::Black);
 	{
+		scoreBoardTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mPlayerCount, (unsigned int) UnitSizes::tileSize * mSettings.mBoardHeight);
+		scoreBoardTexture.clear(sf::Color::Black);
+
 		//create scoreboard background
 		sf::RectangleShape scoreBoardBackGround(sf::Vector2f(UnitSizes::tileSize * mSettings.mPlayerCount, UnitSizes::tileSize * mSettings.mBoardHeight));
 		scoreBoardBackGround.setFillColor(sf::Color(100, 100, 100));
@@ -77,19 +84,21 @@ void ConnectFour::runGame(void)
 			scoreBoardTexture.draw(label);
 		}
 
+		scoreBoardTexture.display();
 	}
-	scoreBoardTexture.display();
+
 	sf::Sprite scoreBoard(scoreBoardTexture.getTexture());
 	scoreBoard.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), 0);
 
 
 	//controls diagrams
 	sf::RenderTexture gameControlTexture, sideBarControlTexture;
-	gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth);
-	gameControlTexture.clear(sf::Color::Transparent);
-	sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth);
-	sideBarControlTexture.clear(sf::Color::Transparent);
 	{
+		gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth);
+		gameControlTexture.clear(sf::Color::Transparent);
+		sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth);
+		sideBarControlTexture.clear(sf::Color::Transparent);
+
 		//arrows corresponding to directions (ie user inputs via wasd/arrows)
 		sf::ConvexShape arrow(3);
 		arrow.setPoint(0, sf::Vector2f(0, UnitSizes::tileSize * .3f));
@@ -167,16 +176,19 @@ void ConnectFour::runGame(void)
 	}
 
 	sf::Sprite gameControlVisual(gameControlTexture.getTexture());
-	sf::Sprite sideBarControlVisual(sideBarControlTexture.getTexture());
 	gameControlVisual.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
+	
+	sf::Sprite sideBarControlVisual(sideBarControlTexture.getTexture());
 	sideBarControlVisual.setPosition(gameControlVisual.getPosition());
 
 	//load selection bar and set initial color (based on first player)
 	sf::RectangleShape selectionBar(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
-	selectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
-	selectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
-	selectionBar.setOutlineThickness(UnitSizes::outlineThickness);
-	selectionBar.setOutlineColor(sf::Color(0, 0, 0, 100));
+	{
+		selectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
+		selectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
+		selectionBar.setOutlineThickness(UnitSizes::outlineThickness);
+		selectionBar.setOutlineColor(sf::Color(0, 0, 0, 100));
+	}
 
 	int selectedCol = 0;
 	int currPlayer = 0;
@@ -209,6 +221,7 @@ void ConnectFour::runGame(void)
 				case sf::Keyboard::Scan::A:
 					if (inSidebar) {
 						//select
+						sideBarSound.play();
 						switch (sideBarSelection) {
 						case 0: //main menu
 							window.close();
@@ -232,6 +245,7 @@ void ConnectFour::runGame(void)
 				case sf::Keyboard::Scan::D:
 					if (inSidebar) {
 						//exit sidebar
+						sideBarSound.play();
 						inSidebar = false;
 						lastSideBarSelection = sideBarSelection;
 						sideBarSelection = -1;
@@ -247,10 +261,12 @@ void ConnectFour::runGame(void)
 				case sf::Keyboard::Scan::W:
 					if (inSidebar) {
 						//scroll up
+						sideBarSound.play();
 						if (--sideBarSelection < 0) sideBarSelection = sideBarButtonCount - 1;
 					}
 					else {
 						//enter sidebar
+						sideBarSound.play();
 						inSidebar = true;
 						sideBarSelection = lastSideBarSelection;
 					}
@@ -260,6 +276,7 @@ void ConnectFour::runGame(void)
 				case sf::Keyboard::Scan::S:
 					if (inSidebar) {
 						//scroll down
+						sideBarSound.play();
 						if (++sideBarSelection >= sideBarButtonCount) sideBarSelection = 0;
 
 					}

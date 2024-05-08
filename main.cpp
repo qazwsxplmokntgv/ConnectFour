@@ -22,8 +22,9 @@
 * minimum window height (4 tiles), with visual indicator to show that the top of the board if its less than that
 * 
 * --if revisiting this project--
-* refactor settings menu bc its kinda a mess lowk
-* maybe mouse functionality 
+* menu controls diagram (likely on the left side)
+* refactor settings menu bc its kinda a mess honestly
+* mouse functionality 
 */
 
 int WinMain(void) {
