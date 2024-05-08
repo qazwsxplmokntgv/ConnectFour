@@ -19,10 +19,7 @@
 /*TODO
 * --now--
 * find new drop sound
-* controls visual
-*  - for menu
-*  - for gameplay + for sidebar
-*  -- updates based on if in sidebar
+* minimum window height (4 tiles), with visual indicator to show that the top of the board if its less than that
 * 
 * --if revisiting this project--
 * refactor settings menu bc its kinda a mess lowk

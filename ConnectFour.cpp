@@ -172,9 +172,9 @@ void ConnectFour::runGame(void)
 	sideBarControlVisual.setPosition(gameControlVisual.getPosition());
 
 	//load selection bar and set initial color (based on first player)
-	sf::RectangleShape selectionBar(sf::Vector2f(UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
+	sf::RectangleShape selectionBar(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
 	selectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
-	selectionBar.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0);
+	selectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
 	selectionBar.setOutlineThickness(UnitSizes::outlineThickness);
 	selectionBar.setOutlineColor(sf::Color(0, 0, 0, 100));
 
@@ -224,7 +224,7 @@ void ConnectFour::runGame(void)
 					else {
 						//scroll selected column left
 						if (--selectedCol < 0) selectedCol = mSettings.mBoardWidth - 1;
-						selectionBar.setPosition((selectedCol + UnitSizes::sideBarWidth) * UnitSizes::tileSize, 0);
+						selectionBar.setPosition((selectedCol + UnitSizes::sideBarWidth + .25f) * UnitSizes::tileSize, 0);
 					}
 					break;
 
@@ -239,7 +239,7 @@ void ConnectFour::runGame(void)
 					else {
 						//scroll selected column right
 						if (++selectedCol >= mSettings.mBoardWidth) selectedCol = 0;
-						selectionBar.setPosition((selectedCol + UnitSizes::sideBarWidth) * UnitSizes::tileSize, 0);
+						selectionBar.setPosition((selectedCol + UnitSizes::sideBarWidth + .25f) * UnitSizes::tileSize, 0);
 					}
 					break;
 
