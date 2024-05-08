@@ -7,6 +7,7 @@
 #include "Settings.hpp"
 #include "Sounds.hpp"
 #include "Token.hpp"
+#include "Settings.hpp"
 #include <SFML/Audio.hpp>
 #include <SFML/Window.hpp>
 #include <vector>

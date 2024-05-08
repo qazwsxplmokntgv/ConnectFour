@@ -52,10 +52,10 @@ int WinMain(void) {
 			menuWindow.create(sf::VideoMode(800, 600), gameTitle);
 			break;
 		case 1: //settings
-			while (settingsMenu.runMenu() != -1);
-			settingsMenu.resetSelection();
-			settings.adjustPlayersByEnteredCount();
-			break;
+			//while (settingsMenu.runMenu() != -1);
+			//settingsMenu.resetSelection();
+			//settings.adjustPlayersByEnteredCount();
+			//break;
 		case 2: //exit
 			menuWindow.close();
 			return 0;

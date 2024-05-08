@@ -4,6 +4,7 @@
 
 #include "Settings.hpp"
 #include <SFML/Graphics.hpp>
+#include <vector>
 #include <string>
 #include <utility>
 #include <vector>
