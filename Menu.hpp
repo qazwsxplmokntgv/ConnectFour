@@ -30,7 +30,7 @@ protected:
 
 	sf::Font& mFont;
 
-	sf::Sound mKeypressSound;
+	sf::SoundBuffer mKeypressSound;
 
 	int mCurrSelection;
 

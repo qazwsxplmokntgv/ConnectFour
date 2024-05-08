@@ -13,16 +13,16 @@ Menu::Menu(sf::RenderWindow& window, sf::Font& font, std::string title, std::vec
 	mTitle.setOrigin(mTitle.getLocalBounds().width / 2.f, mTitle.getLocalBounds().height / 2.f);
 	mTitle.setPosition(mWindow.getSize().x / 2.f, mWindow.getSize().y / 8.f);
 
-	sf::SoundBuffer keypress;
-	keypress.loadFromMemory(&Sounds::click_button_140881_mp3, Sounds::click_button_140881_mp3_len);
-	sf::Sound keypressSound(keypress);
-	keypressSound.setVolume(20);
+	mKeypressSound.loadFromMemory(&Sounds::click_mp3, Sounds::click_mp3_len);
 }
 int Menu::runMenu()
 {
 	//if the elements of which ever menu type is being ran haven't been loaded, load them
 	if (mAdditionalStaticElements.size() == 0) this->loadAdditionalStaticElements();
 	if (mAdditionalDynamicText.size() == 0) this->loadAdditionalDynamicText();
+
+	sf::Sound keypress(mKeypressSound);
+	keypress.setVolume(20);
 
 	//run menu
 	while (mPersistInMenu && mWindow.isOpen()) {
@@ -47,13 +47,13 @@ int Menu::runMenu()
 				case sf::Keyboard::Scan::Down:
 				case sf::Keyboard::Scan::S:
 					//scroll down
-					mKeypressSound.play();
+					keypress.play();
 					inputDown();
 					break;
 				case sf::Keyboard::Scan::Up:
 				case sf::Keyboard::Scan::W:
 					//scroll up
-					mKeypressSound.play();
+					keypress.play();
 					inputUp();
 					break;
 				case sf::Keyboard::Scan::Right:
@@ -61,14 +61,14 @@ int Menu::runMenu()
 				case sf::Keyboard::Scan::Space:
 				case sf::Keyboard::Scan::Enter:
 					//advance (select)
-					mKeypressSound.play();
+					keypress.play();
 					inputRight();
 					break;
 				case sf::Keyboard::Scan::Left:
 				case sf::Keyboard::Scan::A:
 				case sf::Keyboard::Scan::Escape:
 					//back (exit)
-					mKeypressSound.play();
+					keypress.play();
 					inputLeft();
 					break;
 				}
