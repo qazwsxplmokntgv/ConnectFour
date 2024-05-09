@@ -24,7 +24,6 @@
 * 
 * --if revisiting this project--
 * refactor settings menu bc its kinda a mess honestly
-* mouse functionality 
 */
 
 int WinMain(void) {
