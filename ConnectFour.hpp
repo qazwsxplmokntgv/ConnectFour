@@ -13,7 +13,6 @@
 #include <SFML/Window.hpp>
 #include <vector>
 
-
 class ConnectFour {
 public:
 	ConnectFour(Settings& settings);
@@ -24,6 +23,9 @@ public:
 	void resetBoard(void);
 
 	void resetScores(void);
+
+	//redefines any elements whose appearance varies based on the size of the board
+	void reloadSizeDependentElements();
 
 private:
 	//places a token owned by player in column
@@ -39,7 +41,6 @@ private:
 	//only checks for lines involving the most recent move to avoid redundant checks in unchanged parts of the board
 	bool checkForWin(int lastX, int lastY) const;
 
-	
 	int mMoveCount;
 
 	int mCurrPlayer;
@@ -57,9 +58,7 @@ private:
 	std::array<sf::RectangleShape, sideBarButtonCount> mSideBarBoxes;
 	std::array<sf::Text, sideBarButtonCount> mSideBarTexts;
 
-	//number of groups of bounding boxes
-	constexpr static int boundingRegionCount = 2;
-	std::array<std::vector<sf::FloatRect>, boundingRegionCount> mBoundingRegions;
+
 
 	Settings& mSettings;
 

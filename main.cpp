@@ -18,8 +18,7 @@
 
 /*TODO
 * --now--
-* move several parts of the c4 ui to be members 
-* -that way they can be loaded ahead of time while the player is still in the menu 
+* add mouse support in menus
 * fix menu sounds not playing when going between menus
 * 
 * --if revisiting this project--
@@ -65,21 +64,30 @@ int WinMain(void) {
 			[[fallthrough]];
 		case 1: //resume game
 			menuWindow.close();
-			//reopen menu if c4 was left via main menu button
-			if (c4.runGame()) menuWindow.create(sf::VideoMode(800, 600), gameTitle);
+			if (c4.runGame()) 
+				//reopen menu if c4 was left via main menu button
+				menuWindow.create(sf::VideoMode(800, 600), gameTitle);
 			break;
-		case 2: //settings
-		{
+		case 2: { //settings
 			int out;
-			while (true) {
+			bool stayInSettings = true;
+			while (stayInSettings) {
 				out = settingsMenu.runMenu();
-				//back
-				if (out == -1) break; 
-				//reset
-				else if (out == 4) {
+				switch (out) {
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+					break;
+				case 4: {
 					Settings def;
 					settings = def;
-				};
+					break;
+				}
+				default:
+					stayInSettings = false;
+					break;
+				}
 			}
 		}
 			settingsMenu.resetSelection();

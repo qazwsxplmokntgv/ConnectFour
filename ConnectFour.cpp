@@ -22,204 +22,25 @@ ConnectFour::ConnectFour(Settings& settings) :
 	mSideBarSound = sf::Sound(sideBar);
 	mSideBarSound.setVolume(20);
 
-	//selection bar
-	this->mSelectionBar = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
-	this->mSelectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
-	this->mSelectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
-	this->mSelectionBar.setOutlineThickness(UnitSizes::outlineThickness);
-	this->mSelectionBar.setOutlineColor(sf::Color(0, 0, 0, 100));
-
-	//scoreboard
-	this->scoreBoardTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mPlayerCount, (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight);
-	this->scoreBoardTexture.clear();
-	{
-		//create scoreboard background
-		sf::RectangleShape scoreBoardBackGround(sf::Vector2f(UnitSizes::tileSize * mSettings.mPlayerCount, UnitSizes::tileSize * mSettings.mBoardHeight));
-		scoreBoardBackGround.setFillColor(sf::Color(100, 100, 100));
-		scoreBoardBackGround.setOutlineThickness(UnitSizes::outlineThickness);
-		scoreBoardBackGround.setOutlineColor(sf::Color(50, 50, 50));
-
-		this->scoreBoardTexture.draw(scoreBoardBackGround);
-
-		//create main header
-		sf::Text header("Scoreboard", mFont);
-		header.setOrigin(header.getLocalBounds().width / 2.f, header.getLocalBounds().height / 2.f);
-		header.setPosition(UnitSizes::tileSize * mSettings.mPlayerCount / 2.f, UnitSizes::tileSize / 2.f);
-
-		this->scoreBoardTexture.draw(header);
-
-		//create individual labels for each player
-		for (int i = 0; i < mSettings.mPlayerInfo.size(); ++i) {
-			auto label = sf::Text("P" + std::to_string(i + 1), mFont);
-			label.setFillColor(mSettings.mPlayerInfo[i].getToken().getColor());
-			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
-			label.setPosition((.5f + i) * UnitSizes::tileSize, UnitSizes::tileSize);
-
-			this->scoreBoardTexture.draw(label);
-		}
-	}
-	this->scoreBoardTexture.display();
-	this->mScoreBoard = sf::Sprite(scoreBoardTexture.getTexture());
-	this->mScoreBoard.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), 0);
-
-	//controls diagram & text overlays
-	this->controlDiagramTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
-	this->controlDiagramTexture.clear();
-	{
-		//diagram background
-		sf::RectangleShape controlDiagramBackground(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * (float)(mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth)));
-		controlDiagramBackground.setFillColor(sf::Color(100, 100, 100));
-		controlDiagramBackground.setOutlineThickness(UnitSizes::outlineThickness);
-		controlDiagramBackground.setOutlineColor(sf::Color(50, 50, 50));
-		this->controlDiagramTexture.draw(controlDiagramBackground);
-
-		//arrows corresponding to directions (ie user inputs via wasd/arrows)
-		sf::ConvexShape arrow(3);
-		arrow.setPoint(0, sf::Vector2f(0, UnitSizes::tileSize * .3f));
-		arrow.setPoint(1, sf::Vector2f(UnitSizes::tileSize * .15f, 0));
-		arrow.setPoint(2, sf::Vector2f(UnitSizes::tileSize * .3f, UnitSizes::tileSize * .3f));
-		arrow.setOrigin(sf::Vector2f(UnitSizes::tileSize * .15f, UnitSizes::tileSize * .5f));
-		arrow.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-		this->controlDiagramTexture.draw(arrow);
-		for (int i = 0; i < 3; ++i) {
-			arrow.rotate(90);
-			this->controlDiagramTexture.draw(arrow);
-		}
-
-		this->controlDiagramTexture.display();
-	}
-	this->gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
-	this->gameControlTexture.clear(sf::Color::Transparent);
-	this->sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
-	this->sideBarControlTexture.clear(sf::Color::Transparent);
-	{
-		//labels to pair with each arrow indicating function
-		std::array<sf::Text, 4> controlLabels;
-
-		controlLabels[0] = sf::Text("Sidebar", mFont); //up
-		controlLabels[1] = sf::Text("Drop", mFont); //down
-		controlLabels[2] = sf::Text("Scroll", mFont); //left
-		controlLabels[3] = sf::Text("Scroll", mFont); //right
-
-		//centers origins of each label based on the game controls strings
-		for (auto& label : controlLabels)
-			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
-
-		//rotates left and right labels to fit better
-		controlLabels[2].rotate(90);
-		controlLabels[3].rotate(270);
-
-		const float distFromDiagramEdges = .3f * UnitSizes::tileSize;
-
-		//places each label
-		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
-		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
-		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-
-		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
-		for (auto& label : controlLabels) {
-			label.move(0, -.1f * UnitSizes::tileSize);
-			this->gameControlTexture.draw(label);
-		}
-
-		this->gameControlTexture.display();
-
-		//switches the contents of each label to the sidebar navigation version
-		controlLabels[0].setString("Scroll");
-		controlLabels[1].setString("Scroll");
-		controlLabels[2].setString("Select");
-		controlLabels[3].setString("Back");
-
-		//adjusts label origins based on these new strings
-		for (auto& label : controlLabels)
-			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
-
-		//adjusts placement based on new origins to center
-		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
-		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
-		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-
-		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
-		for (auto& label : controlLabels) {
-			label.move(0, -.1f * UnitSizes::tileSize);
-			this->sideBarControlTexture.draw(label);
-		}
-		this->sideBarControlTexture.display();
-	}
-
-	this->mControlDiagram = sf::Sprite(controlDiagramTexture.getTexture());
-	this->mGameControlOverlay = sf::Sprite(gameControlTexture.getTexture());
-	this->mSideBarControlOverlay = sf::Sprite(sideBarControlTexture.getTexture());
-
-	this->boardBackgroundTexture.create((unsigned int)UnitSizes::tileSize* mSettings.mBoardWidth, (unsigned int)UnitSizes::tileSize* mSettings.mBoardHeight);
-	this->boardBackgroundTexture.clear(); 
-	{
-		//define stripes 1 tile tall that span the width of the board
-		std::array<sf::RectangleShape, 2> backgroundStripes = {
-			sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * mSettings.mBoardWidth, UnitSizes::tileSize)),
-			sf::RectangleShape(backgroundStripes[0])
-		};
-
-		//assign each stripe a color
-		backgroundStripes[0].setFillColor(sf::Color(25, 25, 25));
-		backgroundStripes[1].setFillColor(sf::Color::Black);
-
-		//place each tile from the bottom up
-		for (int i = mSettings.mBoardHeight; i > 0; --i) {
-			backgroundStripes[i % backgroundStripes.size()].setPosition(0, UnitSizes::tileSize * (i - 1));
-			this->boardBackgroundTexture.draw(backgroundStripes[i % backgroundStripes.size()]);
-		}
-	}
-	this->boardBackgroundTexture.display();
-
-	this->mBoardBackground = sf::Sprite(boardBackgroundTexture.getTexture());
-	this->mBoardBackground.setPosition(UnitSizes::tileSize* UnitSizes::sideBarWidth, 0);
-
-	//if the board is fewer than 4 tiles tall, place diagrams to the right of scoreboard instead of below to avoid overlap
-	if (mSettings.mBoardHeight < 4)
-		this->mControlDiagram.setPosition(UnitSizes::tileSize * ((UnitSizes::sideBarWidth * 2) + mSettings.mBoardWidth), 0);
-	else
-		this->mControlDiagram.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
-
-	this->mGameControlOverlay.setPosition(mControlDiagram.getPosition());
-	this->mSideBarControlOverlay.setPosition(mControlDiagram.getPosition());
-
-	//board
-	this->mBoard.reserve(mSettings.mBoardWidth);
-	for (int i = 0; i < mSettings.mBoardWidth; ++i) {
-		mBoard.push_back(std::vector<Token>());
-		mBoard.back().reserve(mSettings.mBoardHeight);
-	}
-
-	//sidebar
-	mSideBarTexts[0].setString("Main\nMenu");
-	mSideBarTexts[1].setString("Reset\nBoard");
-	mSideBarTexts[2].setString("Reset\nScores");
-	for (int i = 0; i < sideBarButtonCount; ++i) {
-		mSideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
-		mSideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
-		mSideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness);
-		mSideBarBoxes[i].setOutlineColor(sf::Color(50, 50, 50));
-		mSideBarTexts[i].setFont(mFont);
-		mSideBarTexts[i].setOrigin(mSideBarTexts[i].getLocalBounds().width / 2.f, mSideBarTexts[i].getLocalBounds().height / 2.f);
-		mSideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);
-		mSideBarTexts[i].move(0, -.1f * UnitSizes::tileSize);
-	}
 }
 
 bool ConnectFour::runGame(void)
 {
-	//creates bounding boxes to determine position of mouse when sidebar is hovered
-	mBoundingRegions[0].reserve(sideBarButtonCount);
-	for (int i = 0; i < sideBarButtonCount; ++i)
-		mBoundingRegions[0].push_back(sf::FloatRect(mSideBarBoxes[i].getGlobalBounds()));
+	reloadSizeDependentElements();
+
+	//number of groups of bounding boxes
+	constexpr static int boundingRegionCount = 2;
+	std::array<std::vector<sf::FloatRect>, boundingRegionCount> boundingRegions;
 
 	//creates bounding boxes to determine position of mouse when board is hovered
-	mBoundingRegions[1].reserve(mSettings.mBoardWidth);
+	boundingRegions[1].reserve(mSettings.mBoardWidth);
 	for (int i = 0; i < mSettings.mBoardWidth; ++i)
-		mBoundingRegions[1].push_back(sf::FloatRect(UnitSizes::tileSize * (UnitSizes::sideBarWidth + i), 0, UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
+		boundingRegions[1].push_back(sf::FloatRect(UnitSizes::tileSize * (UnitSizes::sideBarWidth + i), 0, UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
+
+	//creates bounding boxes to determine position of mouse when sidebar is hovered
+	boundingRegions[0].reserve(sideBarButtonCount);
+	for (int i = 0; i < sideBarButtonCount; ++i)
+		boundingRegions[0].push_back(sf::FloatRect(mSideBarBoxes[i].getGlobalBounds()));
 
 	//open game window
 	mWindow.create(sf::VideoMode(
@@ -239,11 +60,15 @@ bool ConnectFour::runGame(void)
 				mWindow.close();
 				return false;
 
+			case sf::Event::Resized:
+			
+				break;
+
 			case sf::Event::MouseMoved:
 				//sidebar hovered
-				if (event.mouseMove.x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
+				if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
 					for (int i = 0; i < sideBarButtonCount; ++i) {
-						if (mBoundingRegions[0][i].contains((float)event.mouseMove.x, (float)event.mouseMove.y)) {
+						if (boundingRegions[0][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
 							mLastSideBarSelection = mSideBarSelection = i;
 							mInSidebar = true;
 							break;
@@ -254,9 +79,9 @@ bool ConnectFour::runGame(void)
 					mSideBarSelection = -1;
 					mInSidebar = false;
 					//board hovered
-					if (event.mouseMove.x < UnitSizes::tileSize * (UnitSizes::sideBarWidth	+ mSettings.mBoardWidth)) {
+					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth	+ mSettings.mBoardWidth)) {
 						for (int i = 0; i < mSettings.mBoardWidth; ++i) {
-							if (mBoundingRegions[1][i].contains((float)event.mouseMove.x, (float)event.mouseMove.y)) {
+							if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
 								mSelectedCol = i;
 								break;
 							}
@@ -328,9 +153,9 @@ bool ConnectFour::runGame(void)
 			case sf::Event::MouseButtonPressed:
 				switch (event.mouseButton.button) {
 				case sf::Mouse::Left: //make move
-					if (event.mouseButton.x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
+					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
 						for (int i = 0; i < sideBarButtonCount; ++i) {
-							if (mBoundingRegions[0][i].contains((float)event.mouseButton.x, (float)event.mouseButton.y)) {
+							if (boundingRegions[0][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
 								mLastSideBarSelection = mSideBarSelection = i;
 								mInSidebar = true;
 								mSideBarSound.play();
@@ -343,9 +168,9 @@ bool ConnectFour::runGame(void)
 						mSideBarSelection = -1;
 						mInSidebar = false;
 						//board hovered
-						if (event.mouseMove.x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
+						if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
 							for (int i = 0; i < mSettings.mBoardWidth; ++i) {
-								if (mBoundingRegions[1][i].contains((float)event.mouseButton.x, (float)event.mouseButton.y)) {
+								if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
 									mSelectedCol = i;
 									simulateMove();
 									break;
@@ -564,6 +389,205 @@ bool ConnectFour::checkForWin(int lastX, int lastY) const
 	}
 	//no sufficient sequence was found
 	return false;
+}
+
+void ConnectFour::reloadSizeDependentElements()
+{
+	//selection bar
+	this->mSelectionBar = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
+	this->mSelectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
+	this->mSelectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
+	this->mSelectionBar.setOutlineThickness(UnitSizes::outlineThickness);
+	this->mSelectionBar.setOutlineColor(sf::Color(0, 0, 0, 100));
+
+	//scoreboard
+	this->scoreBoardTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mPlayerCount, (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight);
+	this->scoreBoardTexture.clear();
+	{
+		//create scoreboard background
+		sf::RectangleShape scoreBoardBackGround(sf::Vector2f(UnitSizes::tileSize * mSettings.mPlayerCount, UnitSizes::tileSize * mSettings.mBoardHeight));
+		scoreBoardBackGround.setFillColor(sf::Color(100, 100, 100));
+		scoreBoardBackGround.setOutlineThickness(UnitSizes::outlineThickness);
+		scoreBoardBackGround.setOutlineColor(sf::Color(50, 50, 50));
+
+		this->scoreBoardTexture.draw(scoreBoardBackGround);
+
+		//create main header
+		sf::Text header("Scoreboard", mFont);
+		header.setOrigin(header.getLocalBounds().width / 2.f, header.getLocalBounds().height / 2.f);
+		header.setPosition(UnitSizes::tileSize * mSettings.mPlayerCount / 2.f, UnitSizes::tileSize / 2.f);
+
+		this->scoreBoardTexture.draw(header);
+
+		//create individual labels for each player
+		for (int i = 0; i < mSettings.mPlayerInfo.size(); ++i) {
+			auto label = sf::Text("P" + std::to_string(i + 1), mFont);
+			label.setFillColor(mSettings.mPlayerInfo[i].getToken().getColor());
+			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+			label.setPosition((.5f + i) * UnitSizes::tileSize, UnitSizes::tileSize);
+
+			this->scoreBoardTexture.draw(label);
+		}
+	}
+	this->scoreBoardTexture.display();
+	this->mScoreBoard = sf::Sprite(scoreBoardTexture.getTexture());
+	this->mScoreBoard.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), 0);
+
+	//control diagram
+	this->controlDiagramTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+	this->controlDiagramTexture.clear();
+	{
+		//diagram background
+		sf::RectangleShape controlDiagramBackground(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * (float)(mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth)));
+		controlDiagramBackground.setFillColor(sf::Color(100, 100, 100));
+		controlDiagramBackground.setOutlineThickness(UnitSizes::outlineThickness);
+		controlDiagramBackground.setOutlineColor(sf::Color(50, 50, 50));
+		this->controlDiagramTexture.draw(controlDiagramBackground);
+
+		//arrows corresponding to directions (ie user inputs via wasd/arrows)
+		sf::ConvexShape arrow(3);
+		arrow.setPoint(0, sf::Vector2f(0, UnitSizes::tileSize * .3f));
+		arrow.setPoint(1, sf::Vector2f(UnitSizes::tileSize * .15f, 0));
+		arrow.setPoint(2, sf::Vector2f(UnitSizes::tileSize * .3f, UnitSizes::tileSize * .3f));
+		arrow.setOrigin(sf::Vector2f(UnitSizes::tileSize * .15f, UnitSizes::tileSize * .5f));
+		arrow.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		this->controlDiagramTexture.draw(arrow);
+		for (int i = 0; i < 3; ++i) {
+			arrow.rotate(90);
+			this->controlDiagramTexture.draw(arrow);
+		}
+
+		this->controlDiagramTexture.display();
+	}
+	//controls diagram text overlays
+	this->gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+	this->gameControlTexture.clear(sf::Color::Transparent);
+	this->sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+	this->sideBarControlTexture.clear(sf::Color::Transparent);
+	{
+		//labels to pair with each arrow indicating function
+		std::array<sf::Text, 4> controlLabels;
+
+		controlLabels[0] = sf::Text("Sidebar", mFont); //up
+		controlLabels[1] = sf::Text("Drop", mFont); //down
+		controlLabels[2] = sf::Text("Scroll", mFont); //left
+		controlLabels[3] = sf::Text("Scroll", mFont); //right
+
+		//centers origins of each label based on the game controls strings
+		for (auto& label : controlLabels)
+			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+
+		//rotates left and right labels to fit better
+		controlLabels[2].rotate(90);
+		controlLabels[3].rotate(270);
+
+		const float distFromDiagramEdges = .3f * UnitSizes::tileSize;
+
+		//places each label
+		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
+		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
+		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+
+		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
+		for (auto& label : controlLabels) {
+			label.move(0, -.1f * UnitSizes::tileSize);
+			this->gameControlTexture.draw(label);
+		}
+
+		this->gameControlTexture.display();
+
+		//switches the contents of each label to the sidebar navigation version
+		controlLabels[0].setString("Scroll");
+		controlLabels[1].setString("Scroll");
+		controlLabels[2].setString("Select");
+		controlLabels[3].setString("Back");
+
+		//adjusts label origins based on these new strings
+		for (auto& label : controlLabels)
+			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+
+		//adjusts placement based on new origins to center
+		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
+		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
+		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+
+		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
+		for (auto& label : controlLabels) {
+			label.move(0, -.1f * UnitSizes::tileSize);
+			this->sideBarControlTexture.draw(label);
+		}
+		this->sideBarControlTexture.display();
+	}
+
+	this->mControlDiagram = sf::Sprite(controlDiagramTexture.getTexture());
+	this->mGameControlOverlay = sf::Sprite(gameControlTexture.getTexture());
+	this->mSideBarControlOverlay = sf::Sprite(sideBarControlTexture.getTexture());
+
+	if (mSettings.mBoardHeight < 4)
+		this->mControlDiagram.setPosition(UnitSizes::tileSize * ((UnitSizes::sideBarWidth * 2) + mSettings.mBoardWidth), 0);
+	else
+		this->mControlDiagram.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
+	this->mGameControlOverlay.setPosition(mControlDiagram.getPosition());
+	this->mSideBarControlOverlay.setPosition(mControlDiagram.getPosition());
+
+	//board background
+	this->boardBackgroundTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mBoardWidth, (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight);
+	this->boardBackgroundTexture.clear();
+	{
+		//define stripes 1 tile tall that span the width of the board
+		std::array<sf::RectangleShape, 2> backgroundStripes = {
+			sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * mSettings.mBoardWidth, UnitSizes::tileSize)),
+			sf::RectangleShape(backgroundStripes[0])
+		};
+
+		//assign each stripe a color
+		backgroundStripes[0].setFillColor(sf::Color(25, 25, 25));
+		backgroundStripes[1].setFillColor(sf::Color::Black);
+
+		//place each tile from the bottom up
+		int offset = mSettings.mBoardHeight % backgroundStripes.size();
+		for (int i = mSettings.mBoardHeight; i >= 0; --i) {
+			backgroundStripes[(i + offset) % backgroundStripes.size()].setPosition(0, UnitSizes::tileSize* (i - 1));
+			this->boardBackgroundTexture.draw(backgroundStripes[(i + offset) % backgroundStripes.size()]);
+		}
+
+		//notches along the width of the board to show the placement of the columns
+		sf::RectangleShape notch(sf::Vector2f(UnitSizes::tileSize * .05f, UnitSizes::tileSize * .2f));
+		notch.setOrigin(notch.getLocalBounds().width / 2.f, notch.getLocalBounds().height);
+		notch.setFillColor(sf::Color(100, 100, 100));
+		for (int i = 1; i < mSettings.mBoardWidth; ++i) {
+			notch.setPosition(UnitSizes::tileSize * i, UnitSizes::tileSize* mSettings.mBoardHeight);
+			boardBackgroundTexture.draw(notch);
+		}
+	}
+	this->boardBackgroundTexture.display();
+
+	this->mBoardBackground = sf::Sprite(boardBackgroundTexture.getTexture());
+	this->mBoardBackground.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0);
+
+	//board
+	this->mBoard.reserve(mSettings.mBoardWidth);
+	for (int i = 0; i < mSettings.mBoardWidth; ++i) {
+		mBoard.push_back(std::vector<Token>());
+		mBoard.back().reserve(mSettings.mBoardHeight);
+	}
+
+	//sidebar
+	mSideBarTexts[0].setString("Main\nMenu");
+	mSideBarTexts[1].setString("Reset\nBoard");
+	mSideBarTexts[2].setString("Reset\nScores");
+	for (int i = 0; i < sideBarButtonCount; ++i) {
+		mSideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
+		mSideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
+		mSideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness);
+		mSideBarBoxes[i].setOutlineColor(sf::Color(50, 50, 50));
+		mSideBarTexts[i].setFont(mFont);
+		mSideBarTexts[i].setOrigin(mSideBarTexts[i].getLocalBounds().width / 2.f, mSideBarTexts[i].getLocalBounds().height / 2.f);
+		mSideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);
+		mSideBarTexts[i].move(0, -.1f * UnitSizes::tileSize);
+	}
 }
 
 void ConnectFour::resetBoard(void)
