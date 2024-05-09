@@ -20,9 +20,9 @@
 * --now--
 * move several parts of the c4 ui to be members 
 * -that way they can be loaded ahead of time while the player is still in the menu 
+* fix menu sounds not playing when going between menus
 * 
 * --if revisiting this project--
-* menu controls diagram (likely on the left side)
 * refactor settings menu bc its kinda a mess honestly
 * mouse functionality 
 */

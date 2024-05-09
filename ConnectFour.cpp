@@ -96,20 +96,18 @@ void ConnectFour::runGame(void)
 	scoreBoard.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), 0);
 
 
-	//controls diagrams
-	sf::RenderTexture gameControlTexture, sideBarControlTexture;
+	//controls diagram & text overlays
+	sf::RenderTexture controlDiagramTexture, gameControlTexture, sideBarControlTexture;
 	{
-		gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
-		gameControlTexture.clear();
-		sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
-		sideBarControlTexture.clear();
-
+		controlDiagramTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+		controlDiagramTexture.clear();
+	
+		//diagram background
 		sf::RectangleShape controlDiagramBackground(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * (float)(mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth)));
 		controlDiagramBackground.setFillColor(sf::Color(100, 100, 100));
 		controlDiagramBackground.setOutlineThickness(UnitSizes::outlineThickness);
 		controlDiagramBackground.setOutlineColor(sf::Color(50, 50, 50));
-		gameControlTexture.draw(controlDiagramBackground);
-		sideBarControlTexture.draw(controlDiagramBackground);
+		controlDiagramTexture.draw(controlDiagramBackground);
 
 		//arrows corresponding to directions (ie user inputs via wasd/arrows)
 		sf::ConvexShape arrow(3);
@@ -118,16 +116,16 @@ void ConnectFour::runGame(void)
 		arrow.setPoint(2, sf::Vector2f(UnitSizes::tileSize * .3f, UnitSizes::tileSize * .3f));
 		arrow.setOrigin(sf::Vector2f(UnitSizes::tileSize * .15f, UnitSizes::tileSize * .5f));
 		arrow.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-		
-		gameControlTexture.draw(arrow);
-		sideBarControlTexture.draw(arrow);
-
-		//add these arrows to both versions of the diagram
+		controlDiagramTexture.draw(arrow);
 		for (int i = 0; i < 3; ++i) {
 			arrow.rotate(90);
-			gameControlTexture.draw(arrow);
-			sideBarControlTexture.draw(arrow);
+			controlDiagramTexture.draw(arrow);
 		}
+
+		controlDiagramTexture.display();
+
+		gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+		gameControlTexture.clear(sf::Color::Transparent);
 
 		//labels to pair with each arrow indicating function
 		std::array<sf::Text, 4> controlLabels;
@@ -161,12 +159,14 @@ void ConnectFour::runGame(void)
 
 		gameControlTexture.display();
 
+		sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+		sideBarControlTexture.clear(sf::Color::Transparent);
+
 		//switches the contents of each label to the sidebar navigation version
 		controlLabels[0].setString("Scroll");
 		controlLabels[1].setString("Scroll");
 		controlLabels[2].setString("Select");
 		controlLabels[3].setString("Back");
-
 
 		//adjusts label origins based on these new strings
 		for (auto& label : controlLabels)
@@ -183,20 +183,21 @@ void ConnectFour::runGame(void)
 			label.move(0, -.1f * UnitSizes::tileSize);
 			sideBarControlTexture.draw(label);
 		}
-
 		sideBarControlTexture.display();
 	}
 
-	sf::Sprite gameControlVisual(gameControlTexture.getTexture());
-	sf::Sprite sideBarControlVisual(sideBarControlTexture.getTexture());
+	sf::Sprite controlDiagram(controlDiagramTexture.getTexture());
+	sf::Sprite gameControlOverlay(gameControlTexture.getTexture());
+	sf::Sprite sideBarControlOverlay(sideBarControlTexture.getTexture());
 	
 	//if the board is fewer than 4 tiles tall, place diagrams to the right of scoreboard instead of below to avoid overlap
 	if (mSettings.mBoardHeight < 4) 
-		gameControlVisual.setPosition(UnitSizes::tileSize * ((UnitSizes::sideBarWidth * 2) + mSettings.mBoardWidth), 0);
+		controlDiagram.setPosition(UnitSizes::tileSize * ((UnitSizes::sideBarWidth * 2) + mSettings.mBoardWidth), 0);
 	else 
-		gameControlVisual.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
+		controlDiagram.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
 	
-	sideBarControlVisual.setPosition(gameControlVisual.getPosition());
+	gameControlOverlay.setPosition(controlDiagram.getPosition());
+	sideBarControlOverlay.setPosition(controlDiagram.getPosition());
 
 	/*********MIDDLE OF SCREEN*********/
 
@@ -383,10 +384,9 @@ void ConnectFour::runGame(void)
 		}
 
 		//controls diagram
-		if (inSidebar)
-			window.draw(sideBarControlVisual);
-		else 
-			window.draw(gameControlVisual);
+		window.draw(controlDiagram);
+		if (inSidebar) window.draw(sideBarControlOverlay);
+		else window.draw(gameControlOverlay);
 
 		//sidebar
 		for (int i = 0; i < sideBarButtonCount; ++i) {
