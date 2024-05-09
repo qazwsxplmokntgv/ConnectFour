@@ -5,14 +5,14 @@
 #include "Fonts.h"
 #include "Player.hpp"
 #include "Settings.hpp"
-#include "Sounds.h"
-#include "UnitSizes.hpp"
-#include "Token.hpp"
 #include "Settings.hpp"
+#include "Sounds.h"
+#include "Token.hpp"
+#include "UnitSizes.hpp"
 #include <SFML/Audio.hpp>
 #include <SFML/Window.hpp>
-#include <vector>
 #include <thread>
+#include <vector>
 
 
 class ConnectFour {

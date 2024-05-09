@@ -2,8 +2,8 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include <SFML/Graphics.hpp>
 #include "UnitSizes.hpp"
+#include <SFML/Graphics.hpp>
 
 class Token {
 public:

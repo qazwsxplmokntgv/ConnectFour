@@ -6,9 +6,9 @@
 #include "Sounds.h"
 #include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
-#include <vector>
 #include <string>
 #include <utility>
+#include <vector>
 #include <vector>
 
 class Menu {

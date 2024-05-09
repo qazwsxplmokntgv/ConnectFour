@@ -1,8 +1,8 @@
 #include "ConnectFour.hpp"
-#include "Settings.hpp"
 #include "Fonts.h"
-#include "Menu.hpp"
 #include "IncremOptMenu.hpp"
+#include "Menu.hpp"
+#include "Settings.hpp"
 
 
 /*CONNECT FOUR

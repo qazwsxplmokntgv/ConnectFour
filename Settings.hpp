@@ -3,8 +3,8 @@
 #define SETTINGS_H
 
 #include "Player.hpp"
-#include <vector>
 #include <array>
+#include <vector>
 #include <vector>
 
 const static std::array<sf::Color, 8> colors = {
