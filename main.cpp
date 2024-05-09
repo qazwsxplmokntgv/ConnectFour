@@ -18,8 +18,8 @@
 
 /*TODO
 * --now--
-* find new drop sound
-* minimum window height (4 tiles), with visual indicator to show that the top of the board if its less than that
+* move several parts of the c4 ui to be members 
+* -that way they can be loaded ahead of time while the player is still in the menu 
 * 
 * --if revisiting this project--
 * menu controls diagram (likely on the left side)

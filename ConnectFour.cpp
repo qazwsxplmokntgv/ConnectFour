@@ -33,6 +33,8 @@ void ConnectFour::runGame(void)
 	//load font
 	sf::Font font;
 	font.loadFromMemory(&Fonts::PixelifySans_ttf, Fonts::PixelifySans_ttf_len);
+	
+	/*********LEFT OF SCREEN**********/
 
 	//load sidebar
 	const int sideBarButtonCount = 3;
@@ -50,14 +52,17 @@ void ConnectFour::runGame(void)
 			sideBarTexts[i].setFont(font);
 			sideBarTexts[i].setOrigin(sideBarTexts[i].getLocalBounds().width / 2.f, sideBarTexts[i].getLocalBounds().height / 2.f);
 			sideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);
+			sideBarTexts[i].move(0, -.1f * UnitSizes::tileSize);
 		}
 	}
+
+	/*********RIGHT OF SCREEN**********/
 
 	//load scoreboard
 	sf::RenderTexture scoreBoardTexture;
 	{
 		scoreBoardTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mPlayerCount, (unsigned int) UnitSizes::tileSize * mSettings.mBoardHeight);
-		scoreBoardTexture.clear(sf::Color::Black);
+		scoreBoardTexture.clear();
 
 		//create scoreboard background
 		sf::RectangleShape scoreBoardBackGround(sf::Vector2f(UnitSizes::tileSize * mSettings.mPlayerCount, UnitSizes::tileSize * mSettings.mBoardHeight));
@@ -94,10 +99,17 @@ void ConnectFour::runGame(void)
 	//controls diagrams
 	sf::RenderTexture gameControlTexture, sideBarControlTexture;
 	{
-		gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth);
-		gameControlTexture.clear(sf::Color::Transparent);
-		sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth);
-		sideBarControlTexture.clear(sf::Color::Transparent);
+		gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+		gameControlTexture.clear();
+		sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+		sideBarControlTexture.clear();
+
+		sf::RectangleShape controlDiagramBackground(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * (float)(mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth)));
+		controlDiagramBackground.setFillColor(sf::Color(100, 100, 100));
+		controlDiagramBackground.setOutlineThickness(UnitSizes::outlineThickness);
+		controlDiagramBackground.setOutlineColor(sf::Color(50, 50, 50));
+		gameControlTexture.draw(controlDiagramBackground);
+		sideBarControlTexture.draw(controlDiagramBackground);
 
 		//arrows corresponding to directions (ie user inputs via wasd/arrows)
 		sf::ConvexShape arrow(3);
@@ -176,10 +188,44 @@ void ConnectFour::runGame(void)
 	}
 
 	sf::Sprite gameControlVisual(gameControlTexture.getTexture());
-	gameControlVisual.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
-	
 	sf::Sprite sideBarControlVisual(sideBarControlTexture.getTexture());
+	
+	//if the board is fewer than 4 tiles tall, place diagrams to the right of scoreboard instead of below to avoid overlap
+	if (mSettings.mBoardHeight < 4) 
+		gameControlVisual.setPosition(UnitSizes::tileSize * ((UnitSizes::sideBarWidth * 2) + mSettings.mBoardWidth), 0);
+	else 
+		gameControlVisual.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
+	
 	sideBarControlVisual.setPosition(gameControlVisual.getPosition());
+
+	/*********MIDDLE OF SCREEN*********/
+
+	sf::RenderTexture boardBackgroundTexture;
+	{
+		boardBackgroundTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mBoardWidth, (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight);
+		boardBackgroundTexture.clear();
+
+		//define stripes 1 tile tall that span the width of the board
+		std::array<sf::RectangleShape, 2> backgroundStripes = {
+			sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * mSettings.mBoardWidth, UnitSizes::tileSize)),
+			sf::RectangleShape(backgroundStripes[0])
+		};
+
+		//assign each stripe a color
+		backgroundStripes[0].setFillColor(sf::Color(25, 25, 25));
+		backgroundStripes[1].setFillColor(sf::Color::Black);
+
+		//place each tile from the bottom up
+		for (int i = mSettings.mBoardHeight; i > 0; --i) {
+			backgroundStripes[i % backgroundStripes.size()].setPosition(0, UnitSizes::tileSize * (i - 1));
+			boardBackgroundTexture.draw(backgroundStripes[i % backgroundStripes.size()]);
+		}
+
+		boardBackgroundTexture.display();
+	}
+
+	sf::Sprite boardBackground(boardBackgroundTexture.getTexture());
+	boardBackground.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0);
 
 	//load selection bar and set initial color (based on first player)
 	sf::RectangleShape selectionBar(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
@@ -190,6 +236,8 @@ void ConnectFour::runGame(void)
 		selectionBar.setOutlineColor(sf::Color(0, 0, 0, 100));
 	}
 
+	/**********************************/
+	
 	int selectedCol = 0;
 	int currPlayer = 0;
 	int roundWinner = -1;
@@ -199,7 +247,10 @@ void ConnectFour::runGame(void)
 	int lastSideBarSelection = 0;
 
 	//game window
-	sf::RenderWindow window(sf::VideoMode((unsigned int)UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (unsigned int)mSettings.mPlayerCount), (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight), "Connect Four");
+	sf::RenderWindow window(sf::VideoMode(
+		(unsigned int)UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (unsigned int)mSettings.mPlayerCount + (mSettings.mBoardHeight < 4 ? UnitSizes::sideBarWidth : 0)), //x
+		(unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight), //y
+		"Connect Four");
 	
 	//game loop
 	while (window.isOpen()) {
@@ -304,9 +355,12 @@ void ConnectFour::runGame(void)
 				break;
 			}
 		}
+		
+		//begin rendering display
+		window.clear();
 
-		//rendering
-		window.clear(sf::Color::Black);
+		//board background
+		window.draw(boardBackground);
 
 		//selection indicator
 		if(!inSidebar) window.draw(selectionBar);
