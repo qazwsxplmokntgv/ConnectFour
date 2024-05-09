@@ -11,7 +11,6 @@
 #include "UnitSizes.hpp"
 #include <SFML/Audio.hpp>
 #include <SFML/Window.hpp>
-#include <thread>
 #include <vector>
 
 
@@ -19,15 +18,14 @@ class ConnectFour {
 public:
 	ConnectFour(Settings& settings);
 
-	std::thread startGameInstance();
-	
+	//false if force quit, true if otherwise exited
+	bool runGame(void);
+
 	void resetBoard(void);
 
 	void resetScores(void);
 
 private:
-	void runGame(void);
-
 	//places a token owned by player in column
 	//returns success of the move
 	bool makeMove(int player, int column);

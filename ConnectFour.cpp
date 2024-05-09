@@ -209,12 +209,7 @@ ConnectFour::ConnectFour(Settings& settings) :
 	}
 }
 
-std::thread ConnectFour::startGameInstance()
-{
-	return std::thread([this] { runGame(); });
-}
-
-void ConnectFour::runGame(void)
+bool ConnectFour::runGame(void)
 {
 	//creates bounding boxes to determine position of mouse when sidebar is hovered
 	mBoundingRegions[0].reserve(sideBarButtonCount);
@@ -242,8 +237,7 @@ void ConnectFour::runGame(void)
 
 			case sf::Event::Closed:
 				mWindow.close();
-				resetBoard();
-				break;
+				return false;
 
 			case sf::Event::MouseMoved:
 				//sidebar hovered
@@ -369,64 +363,51 @@ void ConnectFour::runGame(void)
 
 		/*********LEFT OF SCREEN**********/
 
-		//std::thread screenRenderLeft([this] {
-
-			//sidebar
-			for (int i = 0; i < sideBarButtonCount; ++i) {
-				//sets color to indicate selection
-				if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(sf::Color(60, 60, 60));
-				else mSideBarBoxes[i].setFillColor(sf::Color(100, 100, 100));
-			}
-			for (auto& sideBarBox : mSideBarBoxes)
-				mWindow.draw(sideBarBox);
-			for (auto& sideBarText : mSideBarTexts)
-				mWindow.draw(sideBarText);
-		//});
+		//sidebar
+		for (int i = 0; i < sideBarButtonCount; ++i) {
+			//sets color to indicate selection
+			if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(sf::Color(60, 60, 60));
+			else mSideBarBoxes[i].setFillColor(sf::Color(100, 100, 100));
+		}
+		for (auto& sideBarBox : mSideBarBoxes)
+			mWindow.draw(sideBarBox);
+		for (auto& sideBarText : mSideBarTexts)
+			mWindow.draw(sideBarText);
 
 		/*********MIDDLE OF SCREEN*********/
 
-		//std::thread screenRenderMiddle([this] {
+		//board background
+		mWindow.draw(mBoardBackground);
 
-			//board background
-			mWindow.draw(mBoardBackground);
+		//selection indicator
+		if (!mInSidebar) {
+			mSelectionBar.setPosition((mSelectedCol + UnitSizes::sideBarWidth + .25f) * UnitSizes::tileSize, 0);
+			mWindow.draw(mSelectionBar);
+		}
 
-			//selection indicator
-			if (!mInSidebar) {
-				mSelectionBar.setPosition((mSelectedCol + UnitSizes::sideBarWidth + .25f) * UnitSizes::tileSize, 0);
-				mWindow.draw(mSelectionBar);
+		//board
+		for (const auto& col : mBoard) {
+			for (const auto& token : col) {
+				mWindow.draw(token.getTokenGraphic());
 			}
-
-			//board
-			for (const auto& col : mBoard) {
-				for (const auto& token : col) {
-					mWindow.draw(token.getTokenGraphic());
-				}
-			}
-		//});
+		}
 
 		/*********RIGHT OF SCREEN**********/
 
-		//std::thread screenRenderRight([this] {
+		//scoreboard
+		mWindow.draw(mScoreBoard);
+		for (int i = 0; i < mSettings.mPlayerCount; ++i) {
+			sf::Text score(std::to_string(mSettings.mPlayerInfo[i].getWinCount()), mFont);
+			score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);
+			//vertically aligned with labels
+			score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
+			mWindow.draw(score);
+		}
 
-			//scoreboard
-			mWindow.draw(mScoreBoard);
-			for (int i = 0; i < mSettings.mPlayerCount; ++i) {
-				sf::Text score(std::to_string(mSettings.mPlayerInfo[i].getWinCount()), mFont);
-				score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);
-				//vertically aligned with labels
-				score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
-				mWindow.draw(score);
-			}
-
-			//controls diagram
-			mWindow.draw(mControlDiagram);
-			if (mInSidebar) mWindow.draw(mSideBarControlOverlay);
-			else mWindow.draw(mGameControlOverlay);
-		//});
-
-		//screenRenderLeft.join();
-		//screenRenderMiddle.join();
-		//screenRenderRight.join();
+		//controls diagram
+		mWindow.draw(mControlDiagram);
+		if (mInSidebar) mWindow.draw(mSideBarControlOverlay);
+		else mWindow.draw(mGameControlOverlay);
 
 		//win handling
 		if (mRoundWinner != -1) {
@@ -453,6 +434,7 @@ void ConnectFour::runGame(void)
 		}
 		else mWindow.display();
 	}
+	return true;
 }
 
 bool ConnectFour::makeMove(int player, int column)

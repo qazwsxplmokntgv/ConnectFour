@@ -57,8 +57,6 @@ int WinMain(void) {
 
 	ConnectFour c4(settings);
 
-	std::thread gameThread;
-
 	while (menuWindow.isOpen()) {
 		switch (mainMenu.runMenu()) {
 		case 0: //new game
@@ -66,10 +64,9 @@ int WinMain(void) {
 			c4.resetScores();
 			[[fallthrough]];
 		case 1: //resume game
-			gameThread = c4.startGameInstance();
 			menuWindow.close();
-			gameThread.join();
-			menuWindow.create(sf::VideoMode(800, 600), gameTitle);
+			//reopen menu if c4 was left via main menu button
+			if (c4.runGame()) menuWindow.create(sf::VideoMode(800, 600), gameTitle);
 			break;
 		case 2: //settings
 		{
