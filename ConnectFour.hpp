@@ -13,9 +13,17 @@
 #include <SFML/Window.hpp>
 #include <vector>
 
+namespace UIColors {
+	const auto main = sf::Color(100, 100, 100);
+	const auto outline = sf::Color(0, 0, 0, 100);
+	const auto selection = sf::Color(60, 60, 60);
+}
+
 class ConnectFour {
 public:
 	ConnectFour(Settings& settings);
+	//ConnectFour(const ConnectFour& copy) = delete;
+	//ConnectFour& operator=(const ConnectFour& copy) = delete;
 
 	//false if force quit, true if otherwise exited
 	bool runGame(void);
@@ -47,6 +55,8 @@ private:
 	int mSelectedCol;
 	int mRoundWinner;
 
+	bool mHoveringControlDiagram;
+
 	bool mInSidebar;
 	int mSideBarSelection;
 	int mLastSideBarSelection;
@@ -74,5 +84,6 @@ private:
 	sf::RenderTexture scoreBoardTexture, controlDiagramTexture, gameControlTexture, sideBarControlTexture, boardBackgroundTexture;
 	sf::Sprite mScoreBoard, mControlDiagram, mGameControlOverlay, mSideBarControlOverlay, mBoardBackground;
 	
+	sf::ConvexShape mControlDiagramArrow;
 };
 #endif // !CONNECT_FOUR_H

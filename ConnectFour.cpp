@@ -6,6 +6,7 @@ ConnectFour::ConnectFour(Settings& settings) :
 	mCurrPlayer(0),
 	mSelectedCol(0),
 	mRoundWinner(-1),
+	mHoveringControlDiagram(false),
 	mInSidebar(false),
 	mSideBarSelection(-1),
 	mLastSideBarSelection(0)
@@ -22,6 +23,13 @@ ConnectFour::ConnectFour(Settings& settings) :
 	mSideBarSound = sf::Sound(sideBar);
 	mSideBarSound.setVolume(20);
 
+	//control diagram arrow
+	mControlDiagramArrow = sf::ConvexShape(3);
+	mControlDiagramArrow.setPoint(0, sf::Vector2f(0, UnitSizes::tileSize * .3f));
+	mControlDiagramArrow.setPoint(1, sf::Vector2f(UnitSizes::tileSize * .15f, 0));
+	mControlDiagramArrow.setPoint(2, sf::Vector2f(UnitSizes::tileSize * .3f, UnitSizes::tileSize * .3f));
+	mControlDiagramArrow.setOrigin(sf::Vector2f(UnitSizes::tileSize * .15f, UnitSizes::tileSize * .5f));
+
 }
 
 bool ConnectFour::runGame(void)
@@ -29,19 +37,22 @@ bool ConnectFour::runGame(void)
 	reloadSizeDependentElements();
 
 	//number of groups of bounding boxes
-	constexpr static int boundingRegionCount = 2;
+	constexpr static int boundingRegionCount = 3;
 	std::array<std::vector<sf::FloatRect>, boundingRegionCount> boundingRegions;
-
-	//creates bounding boxes to determine position of mouse when board is hovered
-	boundingRegions[1].reserve(mSettings.mBoardWidth);
-	for (int i = 0; i < mSettings.mBoardWidth; ++i)
-		boundingRegions[1].push_back(sf::FloatRect(UnitSizes::tileSize * (UnitSizes::sideBarWidth + i), 0, UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
 
 	//creates bounding boxes to determine position of mouse when sidebar is hovered
 	boundingRegions[0].reserve(sideBarButtonCount);
 	for (int i = 0; i < sideBarButtonCount; ++i)
 		boundingRegions[0].push_back(sf::FloatRect(mSideBarBoxes[i].getGlobalBounds()));
 
+	//creates bounding boxes to determine position of mouse when board is hovered
+	boundingRegions[1].reserve(mSettings.mBoardWidth);
+	for (int i = 0; i < mSettings.mBoardWidth; ++i)
+		boundingRegions[1].push_back(sf::FloatRect(UnitSizes::tileSize * (UnitSizes::sideBarWidth + i), 0, UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
+
+	//creates a bounding box for the control diagram
+	boundingRegions[2] = { sf::FloatRect(mControlDiagram.getGlobalBounds()) };
+	
 	//open game window
 	mWindow.create(sf::VideoMode(
 		(unsigned int)UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (unsigned int)mSettings.mPlayerCount + (mSettings.mBoardHeight < 4 ? UnitSizes::sideBarWidth : 0)), //x
@@ -61,6 +72,7 @@ bool ConnectFour::runGame(void)
 				return false;
 
 			case sf::Event::MouseMoved:
+				mHoveringControlDiagram = false;
 				//sidebar hovered
 				if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
 					for (int i = 0; i < sideBarButtonCount; ++i) {
@@ -72,10 +84,10 @@ bool ConnectFour::runGame(void)
 					}
 				}
 				else {
-					mSideBarSelection = -1;
-					mInSidebar = false;
 					//board hovered
 					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth	+ mSettings.mBoardWidth)) {
+						mSideBarSelection = -1;
+						mInSidebar = false;
 						for (int i = 0; i < mSettings.mBoardWidth; ++i) {
 							if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
 								mSelectedCol = i;
@@ -83,6 +95,39 @@ bool ConnectFour::runGame(void)
 							}
 						}
 					} 
+					//control diagram hovered
+					else if (boundingRegions[2][0].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
+						mHoveringControlDiagram = true;
+						const sf::Vector2i diagramCorner = mWindow.mapCoordsToPixel(boundingRegions[2][0].getPosition());
+						//up or right
+						if (event.mouseMove.x - diagramCorner.x > event.mouseMove.y - diagramCorner.y) {
+							//up
+							if ((event.mouseMove.x + event.mouseMove.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) {
+								mControlDiagramArrow.setRotation(0);
+							}
+
+							//right
+							else {
+								mControlDiagramArrow.setRotation(90);
+							}
+						}
+						//down or left
+						else {
+							//left
+							if ((event.mouseMove.x + event.mouseMove.y) - (diagramCorner.x + diagramCorner.y) > mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) {
+								mControlDiagramArrow.setRotation(180);
+							}
+
+							//down
+							else {
+								mControlDiagramArrow.setRotation(270);
+							}
+						}
+					}
+					else {
+						mSideBarSelection = -1;
+						mInSidebar = false;
+					}
 				}
 				break;
 
@@ -101,10 +146,11 @@ bool ConnectFour::runGame(void)
 						}
 					}
 					else {
-						mSideBarSelection = -1;
-						mInSidebar = false;
+						
 						//board hovered
 						if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
+							mSideBarSelection = -1;
+							mInSidebar = false;
 							for (int i = 0; i < mSettings.mBoardWidth; ++i) {
 								if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
 									mSelectedCol = i;
@@ -112,6 +158,75 @@ bool ConnectFour::runGame(void)
 									break;
 								}
 							}
+						}
+						//control diagram hovered
+						else if (boundingRegions[2][0].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
+							mHoveringControlDiagram = true;
+							const sf::Vector2i diagramCorner = mWindow.mapCoordsToPixel(boundingRegions[2][0].getPosition());
+							//up or right
+							if (event.mouseButton.x - diagramCorner.x > event.mouseButton.y - diagramCorner.y) {
+								//up
+								if ((event.mouseButton.x + event.mouseButton.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) {
+									if (mInSidebar) {
+										//scroll up
+										mSideBarSound.play();
+										if (--mSideBarSelection < 0) mSideBarSelection = sideBarButtonCount - 1;
+									}
+									else {
+										//enter sidebar
+										mSideBarSound.play();
+										mInSidebar = true;
+										mSideBarSelection = mLastSideBarSelection;
+									}
+								}
+									
+								//right
+								else {
+									if (mInSidebar) {
+										//exit sidebar
+										mSideBarSound.play();
+										mInSidebar = false;
+										mLastSideBarSelection = mSideBarSelection;
+										mSideBarSelection = -1;
+									}
+									else {
+										//scroll selected column right
+										if (++mSelectedCol >= mSettings.mBoardWidth) mSelectedCol = 0;
+									}
+								}
+							}
+							//down or left
+							else {
+								//left
+								if ((event.mouseButton.x + event.mouseButton.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) {
+									if (mInSidebar) {
+										//select
+										mSideBarSound.play();
+										executeSidebarSelection();
+									}
+									else {
+										//scroll selected column left
+										if (--mSelectedCol < 0) mSelectedCol = mSettings.mBoardWidth - 1;
+									}
+								}
+									
+								//down
+								else {
+									if (mInSidebar) {
+										//scroll down
+										mSideBarSound.play();
+										if (++mSideBarSelection >= sideBarButtonCount) mSideBarSelection = 0;
+									}
+									else {
+										//make move
+										simulateMove();
+									}
+								}
+							}
+						}
+						else {
+							mSideBarSelection = -1;
+							mInSidebar = false;
 						}
 					}
 				}
@@ -188,8 +303,8 @@ bool ConnectFour::runGame(void)
 		//sidebar
 		for (int i = 0; i < sideBarButtonCount; ++i) {
 			//sets color to indicate selection
-			if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(sf::Color(60, 60, 60));
-			else mSideBarBoxes[i].setFillColor(sf::Color(100, 100, 100));
+			if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(UIColors::selection);
+			else mSideBarBoxes[i].setFillColor(UIColors::main);
 		}
 		for (auto& sideBarBox : mSideBarBoxes)
 			mWindow.draw(sideBarBox);
@@ -228,8 +343,11 @@ bool ConnectFour::runGame(void)
 
 		//controls diagram
 		mWindow.draw(mControlDiagram);
+		if (mHoveringControlDiagram) mWindow.draw(mControlDiagramArrow);
 		if (mInSidebar) mWindow.draw(mSideBarControlOverlay);
 		else mWindow.draw(mGameControlOverlay);
+
+		/**********************************/
 
 		//win handling
 		if (mRoundWinner != -1) {
@@ -317,7 +435,7 @@ void ConnectFour::executeSidebarSelection()
 bool ConnectFour::checkForWin(int lastX, int lastY) const
 {
 	//token of player that most recently moved
-	Token toMatch = mBoard[lastX][lastY];
+	const Token toMatch = mBoard[lastX][lastY];
 
 	//checks for vertical win
 	//if this column is tall enough for this possibility
@@ -395,7 +513,7 @@ void ConnectFour::reloadSizeDependentElements()
 	this->mSelectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
 	this->mSelectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
 	this->mSelectionBar.setOutlineThickness(UnitSizes::outlineThickness);
-	this->mSelectionBar.setOutlineColor(sf::Color(0, 0, 0, 100));
+	this->mSelectionBar.setOutlineColor(UIColors::outline);
 
 	//scoreboard
 	this->scoreBoardTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mPlayerCount, (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight);
@@ -403,9 +521,9 @@ void ConnectFour::reloadSizeDependentElements()
 	{
 		//create scoreboard background
 		sf::RectangleShape scoreBoardBackGround(sf::Vector2f(UnitSizes::tileSize * mSettings.mPlayerCount, UnitSizes::tileSize * mSettings.mBoardHeight));
-		scoreBoardBackGround.setFillColor(sf::Color(100, 100, 100));
+		scoreBoardBackGround.setFillColor(UIColors::main);
 		scoreBoardBackGround.setOutlineThickness(UnitSizes::outlineThickness);
-		scoreBoardBackGround.setOutlineColor(sf::Color(50, 50, 50));
+		scoreBoardBackGround.setOutlineColor(UIColors::outline);
 
 		this->scoreBoardTexture.draw(scoreBoardBackGround);
 
@@ -436,25 +554,23 @@ void ConnectFour::reloadSizeDependentElements()
 	{
 		//diagram background
 		sf::RectangleShape controlDiagramBackground(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * (float)(mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth)));
-		controlDiagramBackground.setFillColor(sf::Color(100, 100, 100));
+		controlDiagramBackground.setFillColor(UIColors::main);
 		controlDiagramBackground.setOutlineThickness(UnitSizes::outlineThickness);
-		controlDiagramBackground.setOutlineColor(sf::Color(50, 50, 50));
+		controlDiagramBackground.setOutlineColor(UIColors::outline);
 		this->controlDiagramTexture.draw(controlDiagramBackground);
 
 		//arrows corresponding to directions (ie user inputs via wasd/arrows)
-		sf::ConvexShape arrow(3);
-		arrow.setPoint(0, sf::Vector2f(0, UnitSizes::tileSize * .3f));
-		arrow.setPoint(1, sf::Vector2f(UnitSizes::tileSize * .15f, 0));
-		arrow.setPoint(2, sf::Vector2f(UnitSizes::tileSize * .3f, UnitSizes::tileSize * .3f));
-		arrow.setOrigin(sf::Vector2f(UnitSizes::tileSize * .15f, UnitSizes::tileSize * .5f));
-		arrow.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-		this->controlDiagramTexture.draw(arrow);
-		for (int i = 0; i < 3; ++i) {
-			arrow.rotate(90);
-			this->controlDiagramTexture.draw(arrow);
+		mControlDiagramArrow.setFillColor(sf::Color::White);
+		mControlDiagramArrow.setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		for (int i = 0; i < 4; ++i) {
+			this->controlDiagramTexture.draw(mControlDiagramArrow);
+			mControlDiagramArrow.rotate(90);
 		}
 
 		this->controlDiagramTexture.display();
+		
+		//future use of this arrow will be to indicate mouse hovers
+		mControlDiagramArrow.setFillColor(UIColors::selection);
 	}
 	//controls diagram text overlays
 	this->gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
@@ -528,6 +644,7 @@ void ConnectFour::reloadSizeDependentElements()
 		this->mControlDiagram.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (mSettings.mPlayerCount - UnitSizes::sideBarWidth)), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
 	this->mGameControlOverlay.setPosition(mControlDiagram.getPosition());
 	this->mSideBarControlOverlay.setPosition(mControlDiagram.getPosition());
+	this->mControlDiagramArrow.move(mControlDiagram.getPosition());
 
 	//board background
 	this->boardBackgroundTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mBoardWidth, (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight);
@@ -544,18 +661,18 @@ void ConnectFour::reloadSizeDependentElements()
 		backgroundStripes[1].setFillColor(sf::Color::Black);
 
 		//place each tile from the bottom up
-		int offset = mSettings.mBoardHeight % backgroundStripes.size();
+		const int offset = mSettings.mBoardHeight % backgroundStripes.size();
 		for (int i = mSettings.mBoardHeight; i >= 0; --i) {
-			backgroundStripes[(i + offset) % backgroundStripes.size()].setPosition(0, UnitSizes::tileSize* (i - 1));
-			this->boardBackgroundTexture.draw(backgroundStripes[(i + offset) % backgroundStripes.size()]);
+			backgroundStripes[(size_t)(i + offset) % backgroundStripes.size()].setPosition(0, UnitSizes::tileSize* (i - 1));
+			this->boardBackgroundTexture.draw(backgroundStripes[(size_t)(i + offset) % backgroundStripes.size()]);
 		}
 
 		//notches along the width of the board to show the placement of the columns
 		sf::RectangleShape notch(sf::Vector2f(UnitSizes::tileSize * .05f, UnitSizes::tileSize * .2f));
 		notch.setOrigin(notch.getLocalBounds().width / 2.f, notch.getLocalBounds().height);
-		notch.setFillColor(sf::Color(100, 100, 100));
+		notch.setFillColor(UIColors::main);
 		for (int i = 1; i < mSettings.mBoardWidth; ++i) {
-			notch.setPosition(UnitSizes::tileSize * i, UnitSizes::tileSize* mSettings.mBoardHeight);
+			notch.setPosition(UnitSizes::tileSize * i, UnitSizes::tileSize * mSettings.mBoardHeight);
 			boardBackgroundTexture.draw(notch);
 		}
 	}
@@ -579,7 +696,7 @@ void ConnectFour::reloadSizeDependentElements()
 		mSideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
 		mSideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
 		mSideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness);
-		mSideBarBoxes[i].setOutlineColor(sf::Color(50, 50, 50));
+		mSideBarBoxes[i].setOutlineColor(UIColors::outline);
 		mSideBarTexts[i].setFont(mFont);
 		mSideBarTexts[i].setOrigin(mSideBarTexts[i].getLocalBounds().width / 2.f, mSideBarTexts[i].getLocalBounds().height / 2.f);
 		mSideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);

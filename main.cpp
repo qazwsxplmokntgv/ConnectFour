@@ -24,6 +24,7 @@
 
 /*TODO
 * --now--
+* restructure the bounding box mouse checks because those in particular are a mess
 * 
 * --if revisiting this project--
 * fix menu sounds not playing when going between menus
