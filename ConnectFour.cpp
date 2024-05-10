@@ -523,9 +523,9 @@ void ConnectFour::reloadSizeDependentElements()
 	this->mSideBarControlOverlay = sf::Sprite(sideBarControlTexture.getTexture());
 
 	if (mSettings.mBoardHeight < 4)
-		this->mControlDiagram.setPosition(UnitSizes::tileSize * ((UnitSizes::sideBarWidth * 2) + mSettings.mBoardWidth), 0);
+		this->mControlDiagram.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth * 2 + mSettings.mBoardWidth + (mSettings.mPlayerCount - UnitSizes::sideBarWidth)), 0);
 	else
-		this->mControlDiagram.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
+		this->mControlDiagram.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + (mSettings.mPlayerCount - UnitSizes::sideBarWidth)), UnitSizes::tileSize * (mSettings.mBoardHeight - UnitSizes::sideBarWidth));
 	this->mGameControlOverlay.setPosition(mControlDiagram.getPosition());
 	this->mSideBarControlOverlay.setPosition(mControlDiagram.getPosition());
 
