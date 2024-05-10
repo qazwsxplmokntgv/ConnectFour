@@ -18,7 +18,6 @@
 
 /*TODO
 * --now--
-* add mouse support in menus
 * fix menu sounds not playing when going between menus
 * 
 * --if revisiting this project--

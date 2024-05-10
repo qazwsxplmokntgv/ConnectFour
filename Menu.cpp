@@ -3,16 +3,32 @@
 Menu::Menu(sf::RenderWindow& window, sf::Font& font, std::string title, std::vector<std::string> opts, bool isSubMenu, bool* shouldIncludeAdditionalElements) :
 	mWindow(window),
 	mFont(font),
-	mMenuOptions(opts),
 	mCurrSelection(0),
 	mIsSubMenu(isSubMenu),
 	mPersistInMenu(true),
 	mShouldIncludeAdditionalElements(shouldIncludeAdditionalElements) 
 {
+	//title
 	mTitle = sf::Text(title, mFont);
 	mTitle.setOrigin(mTitle.getLocalBounds().width / 2.f, mTitle.getLocalBounds().height / 2.f);
 	mTitle.setPosition(mWindow.getSize().x / 2.f, mWindow.getSize().y / 8.f);
 
+	//opt texts
+	for (int i = 0; i < opts.size(); ++i) {
+		auto opt = sf::Text(opts[i], mFont);
+		opt.setOrigin(opt.getLocalBounds().width / 2, opt.getLocalBounds().height / 2);
+		opt.setPosition(
+			mWindow.getSize().x / 2.f, 
+			//starting from 1/3 down the screen, 
+			(mWindow.getSize().y / 3.f) + 
+			//add i / (2 * n) window heights down, where n = total num of opts
+			(i * mWindow.getSize().y / (2.f * opts.size()))
+		);
+
+		mOptTexts.push_back(opt);
+	}
+	
+	//sound
 	mKeypressSound.loadFromMemory(&Sounds::click_mp3, Sounds::click_mp3_len);
 }
 int Menu::runMenu()
@@ -23,6 +39,17 @@ int Menu::runMenu()
 
 	sf::Sound keypress(mKeypressSound);
 	keypress.setVolume(20);
+
+	//bounding boxes corresponding to each opt
+	std::vector<sf::FloatRect> optBoundingBoxes;
+	for (int i = 0; i < mOptTexts.size(); ++i) {
+		optBoundingBoxes.push_back(sf::FloatRect(
+			mWindow.getSize().x / 3.f,
+			(mWindow.getSize().y / 3.f) + ((i - .5f) * mWindow.getSize().y / (2.f * mOptTexts.size())),
+			mWindow.getSize().x / 3.f,
+			(mWindow.getSize().y) / (2.f * mOptTexts.size())
+		));
+	}
 
 	//run menu
 	while (mPersistInMenu && mWindow.isOpen()) {
@@ -36,10 +63,46 @@ int Menu::runMenu()
 				mWindow.close();
 				return mCurrSelection;
 
-			case sf::Event::Resized:
-				//disallows resizing
-				//might change if I can get the text to not be super wonky at different sizes
-				mWindow.setSize(sf::Vector2u(800, 600));
+			case sf::Event::MouseMoved:
+				if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x >= mWindow.getSize().x / 3.f
+					&& mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < mWindow.getSize().x * 2.f / 3.f) {
+ 					for (int i = 0; i < optBoundingBoxes.size(); ++i) {
+						if (optBoundingBoxes[i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
+							mCurrSelection = i;
+							break;
+						}
+					}
+				}
+				break;
+
+			case sf::Event::MouseButtonPressed:
+				switch (event.mouseButton.button) {
+				
+				case sf::Mouse::Left:
+				case sf::Mouse::XButton2:
+					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x >= mWindow.getSize().x / 3.f
+						&& mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < mWindow.getSize().x * 2.f / 3.f) {
+						for (int i = 0; i < optBoundingBoxes.size(); ++i) {
+							if (optBoundingBoxes[i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
+								mCurrSelection = i;
+								inputRight();
+								break;
+							}
+						}
+					}
+					break;
+				
+				case sf::Mouse::Right:
+				case sf::Mouse::XButton1:
+					inputLeft();
+					break;
+				
+				}
+				break;
+
+			case sf::Event::MouseWheelScrolled:
+				for (int i = 0; i < event.mouseWheelScroll.delta; ++i) inputUp();
+				for (int i = 0; i > event.mouseWheelScroll.delta; --i) inputDown();
 				break;
 
 			case sf::Event::KeyPressed:
@@ -81,15 +144,16 @@ int Menu::runMenu()
 
 		mWindow.draw(mTitle);
 
-		for (int i = 0; i < mMenuOptions.size(); ++i) {
-			auto opt = sf::Text(mMenuOptions[i], mFont);
-			opt.setOrigin(opt.getLocalBounds().width / 2, opt.getLocalBounds().height / 2);
-			opt.setPosition(mWindow.getSize().x / 2.f, (mWindow.getSize().y / 3.f) + (i * mWindow.getSize().y / (2.f * mMenuOptions.size())));
-			if (i == mCurrSelection) {
-				opt.setStyle(sf::Text::Bold);
-			}
-			mWindow.draw(opt);
-		}
+		for (int i = 0; i < mOptTexts.size(); ++i) {
+			//bold the selection
+			if (i == mCurrSelection)
+				mOptTexts[i].setStyle(sf::Text::Style::Bold);
+			else if (mOptTexts[i].getStyle() != sf::Text::Style::Regular)
+				mOptTexts[i].setStyle(sf::Text::Style::Regular);
+
+			//draw opts
+			mWindow.draw(mOptTexts[i]);
+		} 
 
 		//draws any other elements (for specialized menus)
 		if (mShouldIncludeAdditionalElements != nullptr && *mShouldIncludeAdditionalElements) {
@@ -113,12 +177,12 @@ void Menu::resetSelection(void)
 
 void Menu::inputDown(void)
 {
-	if (++mCurrSelection >= mMenuOptions.size()) mCurrSelection = 0;
+	if (++mCurrSelection >= mOptTexts.size()) mCurrSelection = 0;
 }
 
 void Menu::inputUp(void)
 {
-	if (--mCurrSelection < 0) mCurrSelection = (int)mMenuOptions.size() - 1;
+	if (--mCurrSelection < 0) mCurrSelection = (int)mOptTexts.size() - 1;
 		}
 
 void Menu::inputLeft(void)

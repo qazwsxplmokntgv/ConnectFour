@@ -26,7 +26,8 @@ protected:
 	virtual void inputRight(void);
 
 	sf::Text mTitle;
-	std::vector<std::string> mMenuOptions;
+	std::vector<sf::Text> mOptTexts;
+
 
 	sf::Font& mFont;
 

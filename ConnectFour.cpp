@@ -60,10 +60,6 @@ bool ConnectFour::runGame(void)
 				mWindow.close();
 				return false;
 
-			case sf::Event::Resized:
-			
-				break;
-
 			case sf::Event::MouseMoved:
 				//sidebar hovered
 				if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
@@ -89,6 +85,36 @@ bool ConnectFour::runGame(void)
 					} 
 				}
 				break;
+
+			case sf::Event::MouseButtonPressed:
+				switch (event.mouseButton.button) {
+				case sf::Mouse::Left: //make move
+					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
+						for (int i = 0; i < sideBarButtonCount; ++i) {
+							if (boundingRegions[0][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
+								mLastSideBarSelection = mSideBarSelection = i;
+								mInSidebar = true;
+								mSideBarSound.play();
+								executeSidebarSelection();
+								break;
+							}
+						}
+					}
+					else {
+						mSideBarSelection = -1;
+						mInSidebar = false;
+						//board hovered
+						if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
+							for (int i = 0; i < mSettings.mBoardWidth; ++i) {
+								if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
+									mSelectedCol = i;
+									simulateMove();
+									break;
+								}
+							}
+						}
+					}
+				}
 
 			case sf::Event::KeyPressed:
 				switch (event.key.scancode) {
@@ -150,36 +176,7 @@ bool ConnectFour::runGame(void)
 					break;
 				}
 				break;
-			case sf::Event::MouseButtonPressed:
-				switch (event.mouseButton.button) {
-				case sf::Mouse::Left: //make move
-					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
-						for (int i = 0; i < sideBarButtonCount; ++i) {
-							if (boundingRegions[0][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
-								mLastSideBarSelection = mSideBarSelection = i;
-								mInSidebar = true;
-								mSideBarSound.play();
-								executeSidebarSelection();
-								break;
-							}
-						}
-					}
-					else {
-						mSideBarSelection = -1;
-						mInSidebar = false;
-						//board hovered
-						if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
-							for (int i = 0; i < mSettings.mBoardWidth; ++i) {
-								if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
-									mSelectedCol = i;
-									simulateMove();
-									break;
-								}
-							}
-						}
-					}
-					
-				}
+
 			}
 		}
 		
