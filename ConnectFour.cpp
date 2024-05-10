@@ -62,7 +62,6 @@ bool ConnectFour::runGame(void)
 	
 	//game loop
 	while (mWindow.isOpen()) {
-
 		//event handling
 		sf::Event event;
 		while (mWindow.pollEvent(event)) {
@@ -75,7 +74,7 @@ bool ConnectFour::runGame(void)
 			case sf::Event::MouseMoved:
 				mHoveringControlDiagram = false;
 				//sidebar hovered
-				if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
+				if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, 0)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
 					for (int i = 0; i < sideBarButtonCount; ++i) {
 						if (boundingRegions[0][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
 							mLastSideBarSelection = mSideBarSelection = i;
@@ -84,58 +83,49 @@ bool ConnectFour::runGame(void)
 						}
 					}
 				}
+				//control diagram hovered
+				else if (boundingRegions[2][0].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
+					mHoveringControlDiagram = true;
+					const sf::Vector2i diagramCorner = mWindow.mapCoordsToPixel(boundingRegions[2][0].getPosition());
+					//up or right
+					if (event.mouseMove.x - diagramCorner.x > event.mouseMove.y - diagramCorner.y) {
+						//up
+						if ((event.mouseMove.x + event.mouseMove.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) 
+							mControlDiagramArrow.setRotation(0);
+							
+						//right
+						else mControlDiagramArrow.setRotation(90);
+					}
+					//down or left
+					else {
+						//left
+						if ((event.mouseMove.x + event.mouseMove.y) - (diagramCorner.x + diagramCorner.y) > mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) 
+							mControlDiagramArrow.setRotation(180);
+
+						//down
+						else mControlDiagramArrow.setRotation(270);
+					}
+				}
 				else {
+					mSideBarSelection = -1;
+					mInSidebar = false;
 					//board hovered
-					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth	+ mSettings.mBoardWidth)) {
-						mSideBarSelection = -1;
-						mInSidebar = false;
+					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, 0)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
 						for (int i = 0; i < mSettings.mBoardWidth; ++i) {
 							if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
 								mSelectedCol = i;
 								break;
 							}
 						}
-					} 
-					//control diagram hovered
-					else if (boundingRegions[2][0].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
-						mHoveringControlDiagram = true;
-						const sf::Vector2i diagramCorner = mWindow.mapCoordsToPixel(boundingRegions[2][0].getPosition());
-						//up or right
-						if (event.mouseMove.x - diagramCorner.x > event.mouseMove.y - diagramCorner.y) {
-							//up
-							if ((event.mouseMove.x + event.mouseMove.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) {
-								mControlDiagramArrow.setRotation(0);
-							}
-
-							//right
-							else {
-								mControlDiagramArrow.setRotation(90);
-							}
-						}
-						//down or left
-						else {
-							//left
-							if ((event.mouseMove.x + event.mouseMove.y) - (diagramCorner.x + diagramCorner.y) > mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) {
-								mControlDiagramArrow.setRotation(180);
-							}
-
-							//down
-							else {
-								mControlDiagramArrow.setRotation(270);
-							}
-						}
-					}
-					else {
-						mSideBarSelection = -1;
-						mInSidebar = false;
 					}
 				}
 				break;
 
 			case sf::Event::MouseButtonPressed:
 				switch (event.mouseButton.button) {
-				case sf::Mouse::Left: //make move
-					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
+				case sf::Mouse::Left: 
+					//sidebar hovered
+					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, 0)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
 						for (int i = 0; i < sideBarButtonCount; ++i) {
 							if (boundingRegions[0][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
 								mLastSideBarSelection = mSideBarSelection = i;
@@ -146,12 +136,34 @@ bool ConnectFour::runGame(void)
 							}
 						}
 					}
+					//control diagram hovered
+					else if (boundingRegions[2][0].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
+						mHoveringControlDiagram = true;
+						const sf::Vector2i diagramCorner = mWindow.mapCoordsToPixel(boundingRegions[2][0].getPosition());
+						//up or right
+						if (event.mouseButton.x - diagramCorner.x > event.mouseButton.y - diagramCorner.y) {
+							//up
+							if ((event.mouseButton.x + event.mouseButton.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x)
+								inputUp();
+
+							//right
+							else inputRight();
+						}
+						//down or left
+						else {
+							//left
+							if ((event.mouseButton.x + event.mouseButton.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) 
+								inputLeft();
+									
+							//down
+							else inputDown();
+						}
+					}
 					else {
-						
+						mSideBarSelection = -1;
+						mInSidebar = false;
 						//board hovered
-						if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
-							mSideBarSelection = -1;
-							mInSidebar = false;
+						if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, 0)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
 							for (int i = 0; i < mSettings.mBoardWidth; ++i) {
 								if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
 									mSelectedCol = i;
@@ -159,75 +171,6 @@ bool ConnectFour::runGame(void)
 									break;
 								}
 							}
-						}
-						//control diagram hovered
-						else if (boundingRegions[2][0].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
-							mHoveringControlDiagram = true;
-							const sf::Vector2i diagramCorner = mWindow.mapCoordsToPixel(boundingRegions[2][0].getPosition());
-							//up or right
-							if (event.mouseButton.x - diagramCorner.x > event.mouseButton.y - diagramCorner.y) {
-								//up
-								if ((event.mouseButton.x + event.mouseButton.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) {
-									if (mInSidebar) {
-										//scroll up
-										mSideBarSound.play();
-										if (--mSideBarSelection < 0) mSideBarSelection = sideBarButtonCount - 1;
-									}
-									else {
-										//enter sidebar
-										mSideBarSound.play();
-										mInSidebar = true;
-										mSideBarSelection = mLastSideBarSelection;
-									}
-								}
-									
-								//right
-								else {
-									if (mInSidebar) {
-										//exit sidebar
-										mSideBarSound.play();
-										mInSidebar = false;
-										mLastSideBarSelection = mSideBarSelection;
-										mSideBarSelection = -1;
-									}
-									else {
-										//scroll selected column right
-										if (++mSelectedCol >= mSettings.mBoardWidth) mSelectedCol = 0;
-									}
-								}
-							}
-							//down or left
-							else {
-								//left
-								if ((event.mouseButton.x + event.mouseButton.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) {
-									if (mInSidebar) {
-										//select
-										mSideBarSound.play();
-										executeSidebarSelection();
-									}
-									else {
-										//scroll selected column left
-										if (--mSelectedCol < 0) mSelectedCol = mSettings.mBoardWidth - 1;
-									}
-								}
-									
-								//down
-								else {
-									if (mInSidebar) {
-										//scroll down
-										mSideBarSound.play();
-										if (++mSideBarSelection >= sideBarButtonCount) mSideBarSelection = 0;
-									}
-									else {
-										//make move
-										simulateMove();
-									}
-								}
-							}
-						}
-						else {
-							mSideBarSelection = -1;
-							mInSidebar = false;
 						}
 					}
 				}
@@ -238,58 +181,22 @@ bool ConnectFour::runGame(void)
 
 				case sf::Keyboard::Scan::Left:
 				case sf::Keyboard::Scan::A:
-					if (mInSidebar) {
-						//select
-						mSideBarSound.play();
-						executeSidebarSelection();
-					}
-					else {
-						//scroll selected column left
-						if (--mSelectedCol < 0) mSelectedCol = mSettings.mBoardWidth - 1;
-					}
+					inputLeft();
 					break;
 
 				case sf::Keyboard::Scan::Right:
 				case sf::Keyboard::Scan::D:
-					if (mInSidebar) {
-						//exit sidebar
-						mSideBarSound.play();
-						mInSidebar = false;
-						mLastSideBarSelection = mSideBarSelection;
-						mSideBarSelection = -1;
-					}
-					else {
-						//scroll selected column right
-						if (++mSelectedCol >= mSettings.mBoardWidth) mSelectedCol = 0;
-					}
+					inputRight();
 					break;
 
 				case sf::Keyboard::Scan::Up:
 				case sf::Keyboard::Scan::W:
-					if (mInSidebar) {
-						//scroll up
-						mSideBarSound.play();
-						if (--mSideBarSelection < 0) mSideBarSelection = sideBarButtonCount - 1;
-					}
-					else {
-						//enter sidebar
-						mSideBarSound.play();
-						mInSidebar = true;
-						mSideBarSelection = mLastSideBarSelection;
-					}
+					inputUp();
 					break;
 
 				case sf::Keyboard::Scan::Down:
 				case sf::Keyboard::Scan::S:
-					if (mInSidebar) {
-						//scroll down
-						mSideBarSound.play();
-						if (++mSideBarSelection >= sideBarButtonCount) mSideBarSelection = 0;
-					}
-					else {
-						//make move
-						simulateMove();
-					}
+					inputDown();
 					break;
 				}
 				break;
@@ -298,57 +205,58 @@ bool ConnectFour::runGame(void)
 		
 		//begin rendering display
 		mWindow.clear();
+		{
+			/*********LEFT OF SCREEN**********/
 
-		/*********LEFT OF SCREEN**********/
-
-		//sidebar
-		for (int i = 0; i < sideBarButtonCount; ++i) {
-			//sets color to indicate selection
-			if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(UIColors::selection);
-			else mSideBarBoxes[i].setFillColor(UIColors::main);
-		}
-		for (auto& sideBarBox : mSideBarBoxes)
-			mWindow.draw(sideBarBox);
-		for (auto& sideBarText : mSideBarTexts)
-			mWindow.draw(sideBarText);
-
-		/*********MIDDLE OF SCREEN*********/
-
-		//board background
-		mWindow.draw(mBoardBackground);
-
-		//selection indicator
-		if (!mInSidebar) {
-			mSelectionBar.setPosition((mSelectedCol + UnitSizes::sideBarWidth + .25f) * UnitSizes::tileSize, 0);
-			mWindow.draw(mSelectionBar);
-		}
-
-		//board
-		for (const auto& col : mBoard) {
-			for (const auto& token : col) {
-				mWindow.draw(token.getTokenGraphic());
+			//sidebar
+			for (int i = 0; i < sideBarButtonCount; ++i) {
+				//sets color to indicate selection
+				if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(UIColors::selection);
+				else mSideBarBoxes[i].setFillColor(UIColors::main);
 			}
+			for (auto& sideBarBox : mSideBarBoxes)
+				mWindow.draw(sideBarBox);
+			for (auto& sideBarText : mSideBarTexts)
+				mWindow.draw(sideBarText);
+
+			/*********MIDDLE OF SCREEN*********/
+
+			//board background
+			mWindow.draw(mBoardBackground);
+
+			//selection indicator
+			if (!mInSidebar) {
+				mSelectionBar.setPosition((mSelectedCol + UnitSizes::sideBarWidth + .25f) * UnitSizes::tileSize, 0);
+				mWindow.draw(mSelectionBar);
+			}
+
+			//board
+			for (const auto& col : mBoard) {
+				for (const auto& token : col) {
+					mWindow.draw(token.getTokenGraphic());
+				}
+			}
+
+			/*********RIGHT OF SCREEN**********/
+
+			//scoreboard
+			mWindow.draw(mScoreBoard);
+			for (int i = 0; i < mSettings.mPlayerCount; ++i) {
+				sf::Text score(std::to_string(mSettings.mPlayerInfo[i].getWinCount()), mFont);
+				score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);
+				//vertically aligned with labels
+				score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
+				mWindow.draw(score);
+			}
+
+			//controls diagram
+			mWindow.draw(mControlDiagram);
+			if (mHoveringControlDiagram) mWindow.draw(mControlDiagramArrow);
+			if (mInSidebar) mWindow.draw(mSideBarControlOverlay);
+			else mWindow.draw(mGameControlOverlay);
+
+			/**********************************/
 		}
-
-		/*********RIGHT OF SCREEN**********/
-
-		//scoreboard
-		mWindow.draw(mScoreBoard);
-		for (int i = 0; i < mSettings.mPlayerCount; ++i) {
-			sf::Text score(std::to_string(mSettings.mPlayerInfo[i].getWinCount()), mFont);
-			score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);
-			//vertically aligned with labels
-			score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
-			mWindow.draw(score);
-		}
-
-		//controls diagram
-		mWindow.draw(mControlDiagram);
-		if (mHoveringControlDiagram) mWindow.draw(mControlDiagramArrow);
-		if (mInSidebar) mWindow.draw(mSideBarControlOverlay);
-		else mWindow.draw(mGameControlOverlay);
-
-		/**********************************/
 
 		//win handling
 		if (mRoundWinner != -1) {
@@ -505,6 +413,62 @@ bool ConnectFour::checkForWin(int lastX, int lastY) const
 	}
 	//no sufficient sequence was found
 	return false;
+}
+
+void ConnectFour::inputLeft(void)
+{
+	if (mInSidebar) {
+		//select
+		mSideBarSound.play();
+		executeSidebarSelection();
+	}
+	else {
+		//scroll selected column left
+		if (--mSelectedCol < 0) mSelectedCol = mSettings.mBoardWidth - 1;
+	}
+}
+
+void ConnectFour::inputRight(void)
+{
+	if (mInSidebar) {
+		//exit sidebar
+		mSideBarSound.play();
+		mInSidebar = false;
+		mLastSideBarSelection = mSideBarSelection;
+		mSideBarSelection = -1;
+	}
+	else {
+		//scroll selected column right
+		if (++mSelectedCol >= mSettings.mBoardWidth) mSelectedCol = 0;
+	}
+}
+
+void ConnectFour::inputUp(void)
+{
+	if (mInSidebar) {
+		//scroll up
+		mSideBarSound.play();
+		if (--mSideBarSelection < 0) mSideBarSelection = sideBarButtonCount - 1;
+	}
+	else {
+		//enter sidebar
+		mSideBarSound.play();
+		mInSidebar = true;
+		mSideBarSelection = mLastSideBarSelection;
+	}
+}
+
+void ConnectFour::inputDown(void)
+{
+	if (mInSidebar) {
+		//scroll down
+		mSideBarSound.play();
+		if (++mSideBarSelection >= sideBarButtonCount) mSideBarSelection = 0;
+	}
+	else {
+		//make move
+		simulateMove();
+	}
 }
 
 void ConnectFour::reloadSizeDependentElements()

@@ -49,6 +49,11 @@ private:
 	//only checks for lines involving the most recent move to avoid redundant checks in unchanged parts of the board
 	bool checkForWin(int lastX, int lastY) const;
 
+	void inputLeft(void);
+	void inputRight(void);
+	void inputUp(void);
+	void inputDown(void);
+
 	int mMoveCount;
 
 	int mCurrPlayer;
