@@ -42,11 +42,12 @@ int Menu::runMenu()
 
 	//bounding boxes corresponding to each opt
 	std::vector<sf::FloatRect> optBoundingBoxes;
+	optBoundingBoxes.reserve(mOptTexts.size());
 	for (int i = 0; i < mOptTexts.size(); ++i) {
 		optBoundingBoxes.push_back(sf::FloatRect(
-			mWindow.getSize().x / 3.f,
+			mWindow.getSize().x / 4.f,
 			(mWindow.getSize().y / 3.f) + ((i - .5f) * mWindow.getSize().y / (2.f * mOptTexts.size())),
-			mWindow.getSize().x / 3.f,
+			mWindow.getSize().x * 2.f,
 			(mWindow.getSize().y) / (2.f * mOptTexts.size())
 		));
 	}
@@ -64,13 +65,10 @@ int Menu::runMenu()
 				return mCurrSelection;
 
 			case sf::Event::MouseMoved:
-				if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x >= mWindow.getSize().x / 3.f
-					&& mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)).x < mWindow.getSize().x * 2.f / 3.f) {
- 					for (int i = 0; i < optBoundingBoxes.size(); ++i) {
-						if (optBoundingBoxes[i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
-							mCurrSelection = i;
-							break;
-						}
+				for (int i = 0; i < optBoundingBoxes.size(); ++i) {
+					if (optBoundingBoxes[i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
+						mCurrSelection = i;
+						break;
 					}
 				}
 				break;
@@ -80,14 +78,11 @@ int Menu::runMenu()
 				
 				case sf::Mouse::Left:
 				case sf::Mouse::XButton2:
-					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x >= mWindow.getSize().x / 3.f
-						&& mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)).x < mWindow.getSize().x * 2.f / 3.f) {
-						for (int i = 0; i < optBoundingBoxes.size(); ++i) {
-							if (optBoundingBoxes[i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
-								mCurrSelection = i;
-								inputRight();
-								break;
-							}
+					for (int i = 0; i < optBoundingBoxes.size(); ++i) {
+						if (optBoundingBoxes[i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
+							mCurrSelection = i;
+							inputRight();
+							break;
 						}
 					}
 					break;

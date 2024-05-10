@@ -115,6 +115,7 @@ bool ConnectFour::runGame(void)
 						}
 					}
 				}
+				break;
 
 			case sf::Event::KeyPressed:
 				switch (event.key.scancode) {
@@ -176,7 +177,6 @@ bool ConnectFour::runGame(void)
 					break;
 				}
 				break;
-
 			}
 		}
 		
