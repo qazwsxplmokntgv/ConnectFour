@@ -30,28 +30,73 @@ ConnectFour::ConnectFour(Settings& settings) :
 	mControlDiagramArrow.setPoint(2, sf::Vector2f(UnitSizes::tileSize * .3f, UnitSizes::tileSize * .3f));
 	mControlDiagramArrow.setOrigin(sf::Vector2f(UnitSizes::tileSize * .15f, UnitSizes::tileSize * .5f));
 
+	//controls diagram text overlays
+	this->gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+	this->gameControlTexture.clear(sf::Color::Transparent);
+	this->sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
+	this->sideBarControlTexture.clear(sf::Color::Transparent);
+	{
+		//labels to pair with each arrow indicating function
+		std::array<sf::Text, 4> controlLabels;
+
+		controlLabels[0] = sf::Text("Sidebar", mFont); //up
+		controlLabels[1] = sf::Text("Drop", mFont); //down
+		controlLabels[2] = sf::Text("Scroll", mFont); //left
+		controlLabels[3] = sf::Text("Scroll", mFont); //right
+
+		//centers origins of each label based on the game controls strings
+		for (auto& label : controlLabels)
+			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+
+		//rotates left and right labels to fit better
+		controlLabels[2].rotate(90);
+		controlLabels[3].rotate(270);
+
+		const float distFromDiagramEdges = .3f * UnitSizes::tileSize;
+
+		//places each label
+		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
+		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
+		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+
+		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
+		for (auto& label : controlLabels) {
+			label.move(0, -.1f * UnitSizes::tileSize);
+			this->gameControlTexture.draw(label);
+		}
+
+		this->gameControlTexture.display();
+
+		//switches the contents of each label to the sidebar navigation version
+		controlLabels[0].setString("Scroll");
+		controlLabels[1].setString("Scroll");
+		controlLabels[2].setString("Select");
+		controlLabels[3].setString("Back");
+
+		//adjusts label origins based on these new strings
+		for (auto& label : controlLabels)
+			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
+
+		//adjusts placement based on new origins to center
+		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
+		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
+		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
+
+		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
+		for (auto& label : controlLabels) {
+			label.move(0, -.1f * UnitSizes::tileSize);
+			this->sideBarControlTexture.draw(label);
+		}
+		this->sideBarControlTexture.display();
+	}
+
 }
 
 bool ConnectFour::runGame(void)
 {
-	reloadSizeDependentElements();
-
-	//number of groups of bounding boxes
-	constexpr static int boundingRegionCount = 3;
-	std::array<std::vector<sf::FloatRect>, boundingRegionCount> boundingRegions;
-
-	//creates bounding boxes to determine position of mouse when sidebar is hovered
-	boundingRegions[0].reserve(sideBarButtonCount);
-	for (int i = 0; i < sideBarButtonCount; ++i)
-		boundingRegions[0].push_back(sf::FloatRect(mSideBarBoxes[i].getGlobalBounds()));
-
-	//creates bounding boxes to determine position of mouse when board is hovered
-	boundingRegions[1].reserve(mSettings.mBoardWidth);
-	for (int i = 0; i < mSettings.mBoardWidth; ++i)
-		boundingRegions[1].push_back(sf::FloatRect(UnitSizes::tileSize * (UnitSizes::sideBarWidth + i), 0, UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
-
-	//creates a bounding box for the control diagram
-	boundingRegions[2] = { sf::FloatRect(mControlDiagram.getGlobalBounds()) };
+	loadSizeDependentElements();
 	
 	//open game window
 	mWindow.create(sf::VideoMode(
@@ -72,128 +117,50 @@ bool ConnectFour::runGame(void)
 				return false;
 
 			case sf::Event::MouseMoved:
-				mHoveringControlDiagram = false;
-				//sidebar hovered
-				if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, 0)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
-					for (int i = 0; i < sideBarButtonCount; ++i) {
-						if (boundingRegions[0][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
-							mLastSideBarSelection = mSideBarSelection = i;
-							mInSidebar = true;
-							break;
-						}
-					}
-				}
-				//control diagram hovered
-				else if (boundingRegions[2][0].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
-					mHoveringControlDiagram = true;
-					const sf::Vector2i diagramCorner = mWindow.mapCoordsToPixel(boundingRegions[2][0].getPosition());
-					//up or right
-					if (event.mouseMove.x - diagramCorner.x > event.mouseMove.y - diagramCorner.y) {
-						//up
-						if ((event.mouseMove.x + event.mouseMove.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) 
-							mControlDiagramArrow.setRotation(0);
-							
-						//right
-						else mControlDiagramArrow.setRotation(90);
-					}
-					//down or left
-					else {
-						//left
-						if ((event.mouseMove.x + event.mouseMove.y) - (diagramCorner.x + diagramCorner.y) > mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) 
-							mControlDiagramArrow.setRotation(180);
-
-						//down
-						else mControlDiagramArrow.setRotation(270);
-					}
-				}
-				else {
-					mSideBarSelection = -1;
-					mInSidebar = false;
-					//board hovered
-					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, 0)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
-						for (int i = 0; i < mSettings.mBoardWidth; ++i) {
-							if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseMove.x, event.mouseMove.y)))) {
-								mSelectedCol = i;
-								break;
-							}
-						}
-					}
-				}
+				interpretMousePosition(sf::Vector2i(event.mouseMove.x, event.mouseMove.y));
 				break;
 
 			case sf::Event::MouseButtonPressed:
 				switch (event.mouseButton.button) {
 				case sf::Mouse::Left: 
-					//sidebar hovered
-					if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, 0)).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
-						for (int i = 0; i < sideBarButtonCount; ++i) {
-							if (boundingRegions[0][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
-								mLastSideBarSelection = mSideBarSelection = i;
-								mInSidebar = true;
-								mSideBarSound.play();
-								executeSidebarSelection();
-								break;
-							}
-						}
+					switch (interpretMousePosition(sf::Vector2i(event.mouseButton.x, event.mouseButton.y))) {
+					case 0: //sidebar clicked
+						executeSidebarSelection();
+						break;
+					case 1: //control diagram clicked up
+						inputUp();
+						break;
+					case 2: //control diagram clicked right
+						inputRight();
+						break;
+					case 3: //control diagram clicked down
+						inputDown();
+						break;
+					case 4: //control diagram clicked left
+						inputLeft();
+						break;
+					case 5: //board clicked
+						simulateMove();
+						break;
 					}
-					//control diagram hovered
-					else if (boundingRegions[2][0].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
-						mHoveringControlDiagram = true;
-						const sf::Vector2i diagramCorner = mWindow.mapCoordsToPixel(boundingRegions[2][0].getPosition());
-						//up or right
-						if (event.mouseButton.x - diagramCorner.x > event.mouseButton.y - diagramCorner.y) {
-							//up
-							if ((event.mouseButton.x + event.mouseButton.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x)
-								inputUp();
-
-							//right
-							else inputRight();
-						}
-						//down or left
-						else {
-							//left
-							if ((event.mouseButton.x + event.mouseButton.y) - (diagramCorner.x + diagramCorner.y) < mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x) 
-								inputLeft();
-									
-							//down
-							else inputDown();
-						}
-					}
-					else {
-						mSideBarSelection = -1;
-						mInSidebar = false;
-						//board hovered
-						if (mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, 0)).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
-							for (int i = 0; i < mSettings.mBoardWidth; ++i) {
-								if (boundingRegions[1][i].contains(mWindow.mapPixelToCoords(sf::Vector2i(event.mouseButton.x, event.mouseButton.y)))) {
-									mSelectedCol = i;
-									simulateMove();
-									break;
-								}
-							}
-						}
-					}
+					break;
 				}
 				break;
 
 			case sf::Event::KeyPressed:
 				switch (event.key.scancode) {
-
 				case sf::Keyboard::Scan::Left:
 				case sf::Keyboard::Scan::A:
 					inputLeft();
 					break;
-
 				case sf::Keyboard::Scan::Right:
 				case sf::Keyboard::Scan::D:
 					inputRight();
 					break;
-
 				case sf::Keyboard::Scan::Up:
 				case sf::Keyboard::Scan::W:
 					inputUp();
 					break;
-
 				case sf::Keyboard::Scan::Down:
 				case sf::Keyboard::Scan::S:
 					inputDown();
@@ -205,58 +172,7 @@ bool ConnectFour::runGame(void)
 		
 		//begin rendering display
 		mWindow.clear();
-		{
-			/*********LEFT OF SCREEN**********/
-
-			//sidebar
-			for (int i = 0; i < sideBarButtonCount; ++i) {
-				//sets color to indicate selection
-				if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(UIColors::selection);
-				else mSideBarBoxes[i].setFillColor(UIColors::main);
-			}
-			for (auto& sideBarBox : mSideBarBoxes)
-				mWindow.draw(sideBarBox);
-			for (auto& sideBarText : mSideBarTexts)
-				mWindow.draw(sideBarText);
-
-			/*********MIDDLE OF SCREEN*********/
-
-			//board background
-			mWindow.draw(mBoardBackground);
-
-			//selection indicator
-			if (!mInSidebar) {
-				mSelectionBar.setPosition((mSelectedCol + UnitSizes::sideBarWidth + .25f) * UnitSizes::tileSize, 0);
-				mWindow.draw(mSelectionBar);
-			}
-
-			//board
-			for (const auto& col : mBoard) {
-				for (const auto& token : col) {
-					mWindow.draw(token.getTokenGraphic());
-				}
-			}
-
-			/*********RIGHT OF SCREEN**********/
-
-			//scoreboard
-			mWindow.draw(mScoreBoard);
-			for (int i = 0; i < mSettings.mPlayerCount; ++i) {
-				sf::Text score(std::to_string(mSettings.mPlayerInfo[i].getWinCount()), mFont);
-				score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);
-				//vertically aligned with labels
-				score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
-				mWindow.draw(score);
-			}
-
-			//controls diagram
-			mWindow.draw(mControlDiagram);
-			if (mHoveringControlDiagram) mWindow.draw(mControlDiagramArrow);
-			if (mInSidebar) mWindow.draw(mSideBarControlOverlay);
-			else mWindow.draw(mGameControlOverlay);
-
-			/**********************************/
-		}
+		drawGameScreen();
 
 		//win handling
 		if (mRoundWinner != -1) {
@@ -471,14 +387,121 @@ void ConnectFour::inputDown(void)
 	}
 }
 
-void ConnectFour::reloadSizeDependentElements()
+int ConnectFour::interpretMousePosition(sf::Vector2i mousePos)
 {
-	//selection bar
-	this->mSelectionBar = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
-	this->mSelectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
-	this->mSelectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
-	this->mSelectionBar.setOutlineThickness(UnitSizes::outlineThickness);
-	this->mSelectionBar.setOutlineColor(UIColors::outline);
+	//sidebar hovered
+	if (mWindow.mapPixelToCoords(mousePos).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
+		mHoveringControlDiagram = false;
+
+		//checks each sidebar button
+		for (int i = 0; i < sideBarButtonCount; ++i) {
+			//if the hovered button is found, adjust values to reflect it being hovered, and stop looking
+			if (mSideBarBoundingBoxes[i].contains(mWindow.mapPixelToCoords(mousePos))) {
+				mLastSideBarSelection = mSideBarSelection = i;
+				mInSidebar = true;
+				return 0;
+			}
+		}
+	} //control diagram hovered
+	else if (mControlDiagramBoundingBox.contains(mWindow.mapPixelToCoords(mousePos))) {
+		mHoveringControlDiagram = true;
+
+		const sf::Vector2i topLeftCorner = mWindow.mapCoordsToPixel(mControlDiagramBoundingBox.getPosition());
+		const int diagramSideLength = mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x;
+
+		//whether the cursor is closer to the top right corner than the opposite
+		const bool nearTopRight = mousePos.x - topLeftCorner.x > mousePos.y - topLeftCorner.y;
+		//whether the cursor is closer to the top left corner than the opposite
+		const bool nearTopLeft = (mousePos.x - topLeftCorner.x) + (mousePos.y - topLeftCorner.y) < diagramSideLength;
+
+		if (nearTopRight) {	//up or right
+			if (nearTopLeft) { mControlDiagramArrow.setRotation(0); return 1; }  //up
+			else { mControlDiagramArrow.setRotation(90); return 2; }  //right
+		}
+		else { //down or left
+			if (!nearTopLeft) { mControlDiagramArrow.setRotation(180); return 3; }//down
+			else { mControlDiagramArrow.setRotation(270); return 4; } //left
+		}
+	}
+	else {
+		//deliberately placed here and not above--allows side bar to be fully manipulated thru control diagram
+		mSideBarSelection = -1;
+		mInSidebar = false;
+
+		mHoveringControlDiagram = false;
+
+		//board hovered
+		if (mWindow.mapPixelToCoords(mousePos).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
+			//checks each column
+			for (int i = 0; i < mSettings.mBoardWidth; ++i) {
+				//if the hovered column is found, mark it selected, and stop looking
+				if (mBoardBoundingBoxes[i].contains(mWindow.mapPixelToCoords(mousePos))) {
+					mSelectedCol = i;
+					return 5;
+				}
+			}
+		}
+	}
+	return -1;
+}
+
+void ConnectFour::drawGameScreen(void)
+{
+	/*********LEFT OF SCREEN**********/
+
+			//sidebar
+	for (int i = 0; i < sideBarButtonCount; ++i) {
+		//sets color to indicate selection
+		if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(UIColors::selection);
+		else mSideBarBoxes[i].setFillColor(UIColors::main);
+	}
+	for (auto& sideBarBox : mSideBarBoxes)
+		mWindow.draw(sideBarBox);
+	for (auto& sideBarText : mSideBarTexts)
+		mWindow.draw(sideBarText);
+
+	/*********MIDDLE OF SCREEN*********/
+
+	//board background
+	mWindow.draw(mBoardBackground);
+
+	//selection indicator
+	if (!mInSidebar) {
+		mSelectionBar.setPosition((mSelectedCol + UnitSizes::sideBarWidth + .25f) * UnitSizes::tileSize, 0);
+		mWindow.draw(mSelectionBar);
+	}
+
+	//board
+	for (const auto& col : mBoard) {
+		for (const auto& token : col) {
+			mWindow.draw(token.getTokenGraphic());
+		}
+	}
+
+	/*********RIGHT OF SCREEN**********/
+
+	//scoreboard
+	mWindow.draw(mScoreBoard);
+	for (int i = 0; i < mSettings.mPlayerCount; ++i) {
+		sf::Text score(std::to_string(mSettings.mPlayerInfo[i].getWinCount()), mFont);
+		score.setOrigin(score.getLocalBounds().width / 2, score.getLocalBounds().height / 2);
+		//vertically aligned with labels
+		score.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth + .5f + i), UnitSizes::tileSize * 1.5f);
+		mWindow.draw(score);
+	}
+
+	//controls diagram
+	mWindow.draw(mControlDiagram);
+	if (mHoveringControlDiagram) mWindow.draw(mControlDiagramArrow);
+	if (mInSidebar) mWindow.draw(mSideBarControlOverlay);
+	else mWindow.draw(mGameControlOverlay);
+
+	/**********************************/
+}
+
+void ConnectFour::loadSizeDependentElements()
+{
+	/*********RIGHT OF SCREEN**********/
 
 	//scoreboard
 	this->scoreBoardTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mPlayerCount, (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight);
@@ -537,67 +560,6 @@ void ConnectFour::reloadSizeDependentElements()
 		//future use of this arrow will be to indicate mouse hovers
 		mControlDiagramArrow.setFillColor(UIColors::selection);
 	}
-	//controls diagram text overlays
-	this->gameControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
-	this->gameControlTexture.clear(sf::Color::Transparent);
-	this->sideBarControlTexture.create((unsigned int)UnitSizes::tileSize * UnitSizes::sideBarWidth, (unsigned int)UnitSizes::tileSize * (mSettings.mBoardHeight < 4 ? mSettings.mBoardHeight : UnitSizes::sideBarWidth));
-	this->sideBarControlTexture.clear(sf::Color::Transparent);
-	{
-		//labels to pair with each arrow indicating function
-		std::array<sf::Text, 4> controlLabels;
-
-		controlLabels[0] = sf::Text("Sidebar", mFont); //up
-		controlLabels[1] = sf::Text("Drop", mFont); //down
-		controlLabels[2] = sf::Text("Scroll", mFont); //left
-		controlLabels[3] = sf::Text("Scroll", mFont); //right
-
-		//centers origins of each label based on the game controls strings
-		for (auto& label : controlLabels)
-			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
-
-		//rotates left and right labels to fit better
-		controlLabels[2].rotate(90);
-		controlLabels[3].rotate(270);
-
-		const float distFromDiagramEdges = .3f * UnitSizes::tileSize;
-
-		//places each label
-		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
-		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
-		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-
-		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
-		for (auto& label : controlLabels) {
-			label.move(0, -.1f * UnitSizes::tileSize);
-			this->gameControlTexture.draw(label);
-		}
-
-		this->gameControlTexture.display();
-
-		//switches the contents of each label to the sidebar navigation version
-		controlLabels[0].setString("Scroll");
-		controlLabels[1].setString("Scroll");
-		controlLabels[2].setString("Select");
-		controlLabels[3].setString("Back");
-
-		//adjusts label origins based on these new strings
-		for (auto& label : controlLabels)
-			label.setOrigin(label.getLocalBounds().width / 2.f, label.getLocalBounds().height / 2.f);
-
-		//adjusts placement based on new origins to center
-		controlLabels[0].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, distFromDiagramEdges);
-		controlLabels[1].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, (UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges);
-		controlLabels[2].setPosition(distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-		controlLabels[3].setPosition((UnitSizes::tileSize * UnitSizes::sideBarWidth) - distFromDiagramEdges, UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f);
-
-		//adjusts the labels to be slightly higher to appear more properly centered, and adds them to the diagram
-		for (auto& label : controlLabels) {
-			label.move(0, -.1f * UnitSizes::tileSize);
-			this->sideBarControlTexture.draw(label);
-		}
-		this->sideBarControlTexture.display();
-	}
 
 	this->mControlDiagram = sf::Sprite(controlDiagramTexture.getTexture());
 	this->mGameControlOverlay = sf::Sprite(gameControlTexture.getTexture());
@@ -610,6 +572,18 @@ void ConnectFour::reloadSizeDependentElements()
 	this->mGameControlOverlay.setPosition(mControlDiagram.getPosition());
 	this->mSideBarControlOverlay.setPosition(mControlDiagram.getPosition());
 	this->mControlDiagramArrow.move(mControlDiagram.getPosition());
+
+	//creates a bounding box for the control diagram
+	mControlDiagramBoundingBox = sf::FloatRect(mControlDiagram.getGlobalBounds());
+
+	/*********MIDDLE OF SCREEN*********/
+
+	//selection bar
+	this->mSelectionBar = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
+	this->mSelectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
+	this->mSelectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
+	this->mSelectionBar.setOutlineThickness(UnitSizes::outlineThickness);
+	this->mSelectionBar.setOutlineColor(UIColors::outline);
 
 	//board background
 	this->boardBackgroundTexture.create((unsigned int)UnitSizes::tileSize * mSettings.mBoardWidth, (unsigned int)UnitSizes::tileSize * mSettings.mBoardHeight);
@@ -653,6 +627,13 @@ void ConnectFour::reloadSizeDependentElements()
 		mBoard.back().reserve(mSettings.mBoardHeight);
 	}
 
+	//creates bounding boxes to determine position of mouse when board is hovered
+	mBoardBoundingBoxes.reserve(mSettings.mBoardWidth);
+	for (int i = 0; i < mSettings.mBoardWidth; ++i)
+		mBoardBoundingBoxes.push_back(sf::FloatRect(UnitSizes::tileSize * (UnitSizes::sideBarWidth + i), 0, UnitSizes::tileSize, UnitSizes::tileSize * mSettings.mBoardHeight));
+
+	/*********LEFT OF SCREEN**********/
+
 	//sidebar
 	mSideBarTexts[0].setString("Main\nMenu");
 	mSideBarTexts[1].setString("Reset\nBoard");
@@ -661,12 +642,17 @@ void ConnectFour::reloadSizeDependentElements()
 		mSideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
 		mSideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
 		mSideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness);
-		mSideBarBoxes[i].setOutlineColor(UIColors::outline);
+		mSideBarBoxes[i].setOutlineColor(UIColors::nonTransparentGrayOutline);
 		mSideBarTexts[i].setFont(mFont);
 		mSideBarTexts[i].setOrigin(mSideBarTexts[i].getLocalBounds().width / 2.f, mSideBarTexts[i].getLocalBounds().height / 2.f);
 		mSideBarTexts[i].setPosition(UnitSizes::tileSize * UnitSizes::sideBarWidth / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight * (i + .5f) / sideBarButtonCount);
 		mSideBarTexts[i].move(0, -.1f * UnitSizes::tileSize);
 	}
+
+	//creates bounding boxes to determine position of mouse when sidebar is hovered
+	mSideBarBoundingBoxes.reserve(sideBarButtonCount);
+	for (int i = 0; i < sideBarButtonCount; ++i)
+		mSideBarBoundingBoxes.push_back(sf::FloatRect(mSideBarBoxes[i].getGlobalBounds()));
 }
 
 void ConnectFour::resetBoard(void)

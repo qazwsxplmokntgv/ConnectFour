@@ -16,6 +16,7 @@
 namespace UIColors {
 	const auto main = sf::Color(100, 100, 100);
 	const auto outline = sf::Color(0, 0, 0, 100);
+	const auto nonTransparentGrayOutline = sf::Color(50, 50, 50);
 	const auto selection = sf::Color(60, 60, 60);
 }
 
@@ -33,7 +34,7 @@ public:
 	void resetScores(void);
 
 	//redefines any elements whose appearance varies based on the size of the board
-	void reloadSizeDependentElements();
+	void loadSizeDependentElements();
 
 private:
 	//places a token owned by player in column
@@ -54,6 +55,16 @@ private:
 	void inputUp(void);
 	void inputDown(void);
 
+	//returns int corresponding to mouse selection
+	// -1  - none
+	//  0  - sidebar
+	// 1-4 - control diagram: up, right, down, left
+	//  5  - board
+	int interpretMousePosition(sf::Vector2i mousePos);
+
+	//draws all elements of the game
+	void drawGameScreen(void);
+
 	int mMoveCount;
 
 	int mCurrPlayer;
@@ -73,7 +84,9 @@ private:
 	std::array<sf::RectangleShape, sideBarButtonCount> mSideBarBoxes;
 	std::array<sf::Text, sideBarButtonCount> mSideBarTexts;
 
-
+	std::vector<sf::FloatRect> mSideBarBoundingBoxes;
+	std::vector<sf::FloatRect> mBoardBoundingBoxes;
+	sf::FloatRect mControlDiagramBoundingBox;
 
 	Settings& mSettings;
 

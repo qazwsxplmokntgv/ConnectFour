@@ -24,11 +24,10 @@
 
 /*TODO
 * --now--
-* restructure the bounding box mouse checks because those in particular are a mess
 * 
 * --if revisiting this project--
 * fix menu sounds not playing when going between menus
-* refactor settings menu bc its kinda a mess honestly
+* refactor settings menu bc its not the cleanest
 */
 
 int WinMain(void) {
@@ -53,11 +52,11 @@ int WinMain(void) {
 		"Win Requirement",
 		"Player Count",
 		"Reset Settings"
-		}, {
-			{ { 2, 32 }, &settings.mBoardWidth },
-			{ { 2, 32 }, &settings.mBoardHeight },
-			{ { 2, 32 }, &settings.mWinRequirement },
-			{ { 2, 8 }, &settings.mPlayerCount }
+	}, {
+		{ { 2, 32 }, &settings.mBoardWidth },
+		{ { 2, 32 }, &settings.mBoardHeight },
+		{ { 2, 32 }, &settings.mWinRequirement },
+		{ { 2, 8 }, &settings.mPlayerCount }
 	});
 
 	ConnectFour c4(settings);
@@ -102,8 +101,6 @@ int WinMain(void) {
 		case 3: //exit
 			menuWindow.close();
 			return 0;
-		default:
-			break;
 		}
 	}
 	return 1;
