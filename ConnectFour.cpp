@@ -111,38 +111,36 @@ bool ConnectFour::runGame(void)
 		sf::Event event;
 		while (mWindow.pollEvent(event)) {
 			switch (event.type) {
-
 			case sf::Event::Closed:
 				mWindow.close();
 				return false;
 
 			case sf::Event::MouseMoved:
-				interpretMousePosition(sf::Vector2i(event.mouseMove.x, event.mouseMove.y));
+				(void)interpretMousePosition(sf::Vector2i(event.mouseMove.x, event.mouseMove.y));
 				break;
 
 			case sf::Event::MouseButtonPressed:
-				switch (event.mouseButton.button) {
-				case sf::Mouse::Left: 
-					switch (interpretMousePosition(sf::Vector2i(event.mouseButton.x, event.mouseButton.y))) {
-					case 0: //sidebar clicked
-						executeSidebarSelection();
-						break;
-					case 1: //control diagram clicked up
-						inputUp();
-						break;
-					case 2: //control diagram clicked right
-						inputRight();
-						break;
-					case 3: //control diagram clicked down
-						inputDown();
-						break;
-					case 4: //control diagram clicked left
-						inputLeft();
-						break;
-					case 5: //board clicked
-						simulateMove();
-						break;
-					}
+				//accept any mouse button
+				switch (interpretMousePosition(sf::Vector2i(event.mouseButton.x, event.mouseButton.y))) {
+				[[likely]] 
+				case 0: //sidebar clicked
+					executeSidebarSelection();
+					break;
+				[[likely]] 
+				case 5: //board clicked
+					simulateMove();
+					break;
+				case 1: //control diagram clicked up
+					inputUp();
+					break;
+				case 2: //control diagram clicked right
+					inputRight();
+					break;
+				case 3: //control diagram clicked down
+					inputDown();
+					break;
+				case 4: //control diagram clicked left
+					inputLeft();
 					break;
 				}
 				break;
@@ -175,34 +173,16 @@ bool ConnectFour::runGame(void)
 		drawGameScreen();
 
 		//win handling
-		if (mRoundWinner != -1) {
-			mWinSound.play();
-
-			mSettings.mPlayerInfo[mRoundWinner].incWinCount();
-
-			//win message 
-			sf::Text winText("Player " + std::to_string(mRoundWinner + 1) + " wins!\n(Press any key to continue)", mFont);
-			winText.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .5f), UnitSizes::tileSize * .5f);
-			winText.setOutlineThickness(4.f);
-			winText.setOutlineColor(sf::Color::Black);
-			mWindow.draw(winText);
-
+		if (mRoundWinner != -1)
+			//
+			handleWinAndDisplay(event);
+		else [[likely]] 
 			mWindow.display();
-
-			resetBoard();
-
-			//pause on win until keypress
-			do {
-				mWindow.waitEvent(event);
-				if (event.type == sf::Event::Closed) mWindow.close();
-			} while (event.type != sf::Event::KeyPressed && event.type != sf::Event::MouseButtonPressed);
-		}
-		else mWindow.display();
 	}
 	return true;
 }
 
-bool ConnectFour::makeMove(int player, int column)
+bool ConnectFour::attemptTokenDrop(int player, int column)
 {
 	//disallows placing tokens above the board
 	if (mBoard[column].size() >= mSettings.mBoardHeight)
@@ -224,7 +204,7 @@ bool ConnectFour::makeMove(int player, int column)
 
 void ConnectFour::simulateMove(void)
 {
-	if (makeMove(mCurrPlayer, mSelectedCol)) {
+	if (attemptTokenDrop(mCurrPlayer, mSelectedCol)) {
 		mDropSound.play();
 
 		//win checking
@@ -331,6 +311,38 @@ bool ConnectFour::checkForWin(int lastX, int lastY) const
 	return false;
 }
 
+void ConnectFour::handleWinAndDisplay(sf::Event& event)
+{
+	mWinSound.play();
+
+	mSettings.mPlayerInfo[mRoundWinner].incWinCount();
+
+	//win message 
+	sf::Text winText("Player " + std::to_string(mRoundWinner + 1) + " wins!\n(Press any key to continue)", mFont);
+	winText.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .5f), UnitSizes::tileSize * .5f);
+	winText.setOutlineThickness(4.f);
+	winText.setOutlineColor(sf::Color::Black);
+	mWindow.draw(winText);
+
+	mWindow.display();
+
+	//pause on win until keypress
+	do {
+		mWindow.waitEvent(event);
+		if (event.type == sf::Event::Closed)
+			mWindow.close();
+		else if (event.type == sf::Event::Resized) {
+			mWindow.clear();
+			drawGameScreen();
+			mWindow.draw(winText);
+			mWindow.display();
+		}
+	} while (event.type != sf::Event::KeyPressed && event.type != sf::Event::MouseButtonPressed);
+
+	//clears board, including resetting winner flag
+	resetBoard();
+}
+
 void ConnectFour::inputLeft(void)
 {
 	if (mInSidebar) {
@@ -389,23 +401,9 @@ void ConnectFour::inputDown(void)
 
 int ConnectFour::interpretMousePosition(sf::Vector2i mousePos)
 {
-	//sidebar hovered
-	if (mWindow.mapPixelToCoords(mousePos).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
-		mHoveringControlDiagram = false;
-
-		//checks each sidebar button
-		for (int i = 0; i < sideBarButtonCount; ++i) {
-			//if the hovered button is found, adjust values to reflect it being hovered, and stop looking
-			if (mSideBarBoundingBoxes[i].contains(mWindow.mapPixelToCoords(mousePos))) {
-				mLastSideBarSelection = mSideBarSelection = i;
-				mInSidebar = true;
-				return 0;
-			}
-		}
-	} //control diagram hovered
-	else if (mControlDiagramBoundingBox.contains(mWindow.mapPixelToCoords(mousePos))) {
-		mHoveringControlDiagram = true;
-
+	//control diagram hovered
+	if (mHoveringControlDiagram = mControlDiagramBoundingBox.contains(mWindow.mapPixelToCoords(mousePos))) {
+		
 		const sf::Vector2i topLeftCorner = mWindow.mapCoordsToPixel(mControlDiagramBoundingBox.getPosition());
 		const int diagramSideLength = mWindow.mapCoordsToPixel(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, 0)).x;
 
@@ -423,12 +421,25 @@ int ConnectFour::interpretMousePosition(sf::Vector2i mousePos)
 			else { mControlDiagramArrow.setRotation(270); return 4; } //left
 		}
 	}
+	//sidebar hovered
+	else if (mWindow.mapPixelToCoords(mousePos).x < UnitSizes::tileSize * UnitSizes::sideBarWidth) {
+
+		//checks each sidebar button
+		for (int i = 0; i < sideBarButtonCount; ++i) {
+			//if the hovered button is found, adjust values to reflect it being hovered, and stop looking
+			if (mSideBarBoundingBoxes[i].contains(mWindow.mapPixelToCoords(mousePos))) {
+				
+				mLastSideBarSelection = mSideBarSelection = i;
+				mInSidebar = true;
+				
+				return 0;
+			}
+		}
+	}
 	else {
-		//deliberately placed here and not above--allows side bar to be fully manipulated thru control diagram
+		//deselects side bar if not hovered and hovering control diagram (to potentially be navigating sidebar)
 		mSideBarSelection = -1;
 		mInSidebar = false;
-
-		mHoveringControlDiagram = false;
 
 		//board hovered
 		if (mWindow.mapPixelToCoords(mousePos).x < UnitSizes::tileSize * (UnitSizes::sideBarWidth + mSettings.mBoardWidth)) {
@@ -449,7 +460,7 @@ void ConnectFour::drawGameScreen(void)
 {
 	/*********LEFT OF SCREEN**********/
 
-			//sidebar
+	//sidebar
 	for (int i = 0; i < sideBarButtonCount; ++i) {
 		//sets color to indicate selection
 		if (i == mSideBarSelection) mSideBarBoxes[i].setFillColor(UIColors::selection);
@@ -579,7 +590,7 @@ void ConnectFour::loadSizeDependentElements()
 	/*********MIDDLE OF SCREEN*********/
 
 	//selection bar
-	this->mSelectionBar = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
+	this->mSelectionBar.setSize(sf::Vector2f(UnitSizes::tileSize / 2.f, UnitSizes::tileSize * mSettings.mBoardHeight));
 	this->mSelectionBar.setFillColor(mSettings.mPlayerInfo[0].getToken().getColor());
 	this->mSelectionBar.setPosition(UnitSizes::tileSize * (UnitSizes::sideBarWidth + .25f), 0);
 	this->mSelectionBar.setOutlineThickness(UnitSizes::outlineThickness);
@@ -639,7 +650,7 @@ void ConnectFour::loadSizeDependentElements()
 	mSideBarTexts[1].setString("Reset\nBoard");
 	mSideBarTexts[2].setString("Reset\nScores");
 	for (int i = 0; i < sideBarButtonCount; ++i) {
-		mSideBarBoxes[i] = sf::RectangleShape(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
+		mSideBarBoxes[i].setSize(sf::Vector2f(UnitSizes::tileSize * UnitSizes::sideBarWidth, UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount));
 		mSideBarBoxes[i].setPosition(0, i * UnitSizes::tileSize * mSettings.mBoardHeight / sideBarButtonCount);
 		mSideBarBoxes[i].setOutlineThickness(UnitSizes::outlineThickness);
 		mSideBarBoxes[i].setOutlineColor(UIColors::nonTransparentGrayOutline);

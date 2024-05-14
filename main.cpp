@@ -26,8 +26,9 @@
 * --now--
 * 
 * --if revisiting this project--
-* fix menu sounds not playing when going between menus
-* refactor settings menu bc its not the cleanest
+* just redo the menu classes entirely
+* -fix menu sounds not playing when going between menus
+* -refactor settings menu bc its not the cleanest
 */
 
 int WinMain(void) {

@@ -39,7 +39,7 @@ public:
 private:
 	//places a token owned by player in column
 	//returns success of the move
-	bool makeMove(int player, int column);
+	bool attemptTokenDrop(int player, int column);
 
 	//attempts to place a token based on mCurrPlayer and mSelectedCol, and updates various members accordingly
 	void simulateMove(void);
@@ -49,6 +49,8 @@ private:
 
 	//only checks for lines involving the most recent move to avoid redundant checks in unchanged parts of the board
 	bool checkForWin(int lastX, int lastY) const;
+
+	void handleWinAndDisplay(sf::Event& event);
 
 	void inputLeft(void);
 	void inputRight(void);
@@ -99,8 +101,18 @@ private:
 	sf::SoundBuffer drop, win, sideBar;
 	sf::Sound mDropSound, mWinSound, mSideBarSound;
 
-	sf::RenderTexture scoreBoardTexture, controlDiagramTexture, gameControlTexture, sideBarControlTexture, boardBackgroundTexture;
-	sf::Sprite mScoreBoard, mControlDiagram, mGameControlOverlay, mSideBarControlOverlay, mBoardBackground;
+	sf::RenderTexture 
+		scoreBoardTexture, 
+		controlDiagramTexture, 
+		gameControlTexture, 
+		sideBarControlTexture, 
+		boardBackgroundTexture;
+	sf::Sprite 
+		mScoreBoard, 
+		mControlDiagram, 
+		mGameControlOverlay, 
+		mSideBarControlOverlay, 
+		mBoardBackground;
 	
 	sf::ConvexShape mControlDiagramArrow;
 };
